@@ -9,7 +9,7 @@ class Simulator():
         self.dt = 1/self.maxFPS
         self.carMdl = CarClass.Car(self.dt)
         self.accRate = 10            #< pix/sec^2/command
-        self.steeringRate = 0.01     #< rad/sec/command
+        self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
         self.selfControll = selfControll
         self.run = False
@@ -45,7 +45,7 @@ class Simulator():
         self.run = False
     
     def _rotCar(self):
-        car = pygame.transform.rotate(self.car, -math.degrees(self.carMdl.heading))
+        car = pygame.transform.rotate(self.car, -math.degrees(self.carMdl.state.heading))
         carRect = car.get_rect(center=self.carMdl.pos)
         return car, carRect
 
@@ -87,13 +87,13 @@ class Simulator():
             self.carMdl.addAcc(+self.accRate)
         
         if keys[pygame.K_p]:
-            self.carMdl.turn(+self.steeringRate)
+            self.carMdl.addSteering(+self.steeringRate)
             
         elif keys[pygame.K_i]:
-            self.carMdl.turn(-self.steeringRate)
+            self.carMdl.addSteering(-self.steeringRate)
 
         if keys[pygame.K_o]:
-            self.carMdl.steering.set(0)
+            self.carMdl.setSteering(0)
         
         if keys[pygame.K_z]:
             self.carMdl.setVel(0)

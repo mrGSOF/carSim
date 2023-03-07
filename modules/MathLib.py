@@ -1,19 +1,44 @@
 import math
 
-def MxV(M,V) -> list:
+def MxV_2x2(M,V) -> list:
     """ Return the result of 2x2 matrix and 2D vector multiplication """
     O = [0,0]
     O[0] = M[0][0]*V[0] +(M[0][1]*V[1])
     O[1] = M[1][0]*V[0] +(M[1][1]*V[1])    
     return O
 
-def addV(V1, V2) -> list:
+def addV_2D(V1, V2) -> list:
     """ Return the result of 2D vector addition """
     return [V1[0]+V2[0], V1[1]+V2[1]]
 
-def absV(V) -> float:
+def absV_2D(V) -> float:
     """ Return the magnitude of 2D vector """
     return math.sqrt((V[0]**2) +(V[1]**2))
+
+def MxV(M,V) -> list:
+    """ Return the result of NxM matrix and M vector multiplication """
+    N = len(M)
+    O = [0]*N
+    for r,row in enumerate(M):
+        for m,v in zip(row,V):
+            O[r] += m*v
+    return O
+    
+def addV(V1, V2) -> list:
+    """ Return the result of vector addition """
+    O = [0]*len(V1)
+    i = 0
+    for v1,v2 in zip(V1, V2):
+        O[i] = v1+v2
+        i += 1
+    return O
+
+def absV(V) -> float:
+    """ Return the magnitude of vector """
+    s2 = 0
+    for v in V:
+        s2 += v**2
+    return math.sqrt(s2)
 
 def angleV(V) -> float:
     """ Return the angle of 2D vector """
