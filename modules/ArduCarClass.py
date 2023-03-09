@@ -39,7 +39,7 @@ class Car():
         self.pos = (0,0)      #< not used
 
         self.Min = -1.22      #< Max steering angle (rad)
-        self.Max = +0.78      #< Max steering angle (rad)
+        self.Max = +1.22      #< Max steering angle (rad)
         
         self.port = port
         self._start()
