@@ -28,7 +28,7 @@ class Input():
         self.steering = V[1]   #< Car's steering angle (rad)
 
 class Car():
-    def __init__(self, dt, position=[0,0], velocity=0, heading=0, Cd=0.05):
+    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, heading=0, Cd=0.05):
         self.state = State(position[0], position[1], velocity, heading) #< Car's state
         self.input = Input(acc=0, steering=0)                           #< Car's input
         self.Cd = Cd
@@ -36,6 +36,9 @@ class Car():
         self.pos = (0, 0)
         self.Min = -0.5       #< Max steering angle (rad)
         self.Max = +0.5       #< Max steering angle (rad)
+    
+    def _start(self):
+        raise Exception("this function does not exist in the simulator version of the car module")
 
     def addAcc(self, dAcc):
         self.input.acc += dAcc
