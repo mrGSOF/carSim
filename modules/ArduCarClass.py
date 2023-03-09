@@ -36,9 +36,10 @@ class Car():
         
         self.dt = dt          #< not used
         self.Cd = Cd          #< not used
+        self.pos = (0,0)      #< not used
 
         self.Min = -1.22      #< Max steering angle (rad)
-        self.Max = +1.22      #< Max steering angle (rad)
+        self.Max = +0.78      #< Max steering angle (rad)
         
         self.port = port
         self._start()
@@ -74,7 +75,8 @@ class Car():
         self.input.steering = ml.clip(steering, self.Min, self.Max)
 
     def update(self):
-        self.car.move(self.input.acc, self.input.acc, math.degrees(self.input.steering))
+        print(math.degrees(self.input.steering+self.Max))
+        self.car.move(self.input.acc, self.input.acc, math.degrees(self.input.steering+self.Max))
         # self.A = self._calcStateTransitionMatrix()
         # self.B = self._calcInputMatrix()
         # Ax = ml.MxV(self.A, self.state.getVector())
