@@ -1,5 +1,6 @@
 import pygame
 from modules import CarClass
+from modules import ArduCarClass as CarClass
 
 class Simulator():
     def __init__(self, fps, size=(500, 500), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
@@ -8,7 +9,7 @@ class Simulator():
         self.dt = 1/self.maxFPS
         self.carMdl = CarClass.Car(self.dt)
         self.accRate = 10             #< pix/sec^2/command
-        self.steeringRate = 0.002     #< rad/sec/command
+        self.steeringRate = 0.02      #< rad/sec/command
         self.bgColor = bgColor
         self.selfControll = selfControll
         self.run = False
@@ -107,4 +108,4 @@ class Simulator():
 
 if __name__ == "__main__":
     pygame.init()
-    sim = Simulator(30, imageWidth=30)
+    sim = Simulator(3, imageWidth=30)
