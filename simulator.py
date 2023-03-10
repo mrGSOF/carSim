@@ -1,6 +1,5 @@
 import pygame
 from modules import CarClass
-import math
 
 class Simulator():
     def __init__(self, fps, size=(500, 500), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
@@ -8,7 +7,7 @@ class Simulator():
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
         self.carMdl = CarClass.Car(self.dt)
-        self.accRate = 10            #< pix/sec^2/command
+        self.accRate = 10             #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
         self.selfControll = selfControll
@@ -39,16 +38,10 @@ class Simulator():
     def start(self):
         self.run = True
         self._runSimulator()
-        # threading.Thread(target=self._startSimulator).start()
 
     def stop(self):
         self.run = False
     
-    def _rotCar(self):
-        car = pygame.transform.rotate(self.car, -math.degrees(self.carMdl.state.heading))
-        carRect = car.get_rect(center=self.carMdl.pos)
-        return car, carRect
-
     def _runSimulator(self):
         while self.run:
             for event in pygame.event.get():
@@ -56,30 +49,29 @@ class Simulator():
                     self.stop()
                 if self.selfControll:
                     keys = pygame.key.get_pressed()
-                    self._readAccKeys(keys)
+##                    self._readAccKeys(keys)
                     self._readDirKeys(keys)
                     
             self.carMdl.update()
-            #clip(self.velocity, (self.terminalVelocity*-1, self.terminalVelocity))
-            
-            self._draw( self._rotCar() )
+            self._draw()
             self.clock.tick(self.maxFPS)
         pygame.quit()
 
-    def _readAccKeys(self, keys):
-        if keys[pygame.K_s]:
-            self.carMdl.velocity[1] += self.accRate.self.dt
-            
-        elif keys[pygame.K_w]:
-            self.carMdl.velocity[1] -= self.accRate.self.dt
-        
-        if keys[pygame.K_d]:
-            self.carMdl.velocity[0] += self.accRate.self.dt
-            
-        elif keys[pygame.K_a]:
-            self.carMdl.velocity[0] -= self.accRate.self.dt
+##    def _readAccKeys(self, keys):
+##        if keys[pygame.K_s]:
+##            self.carMdl.velocity[1] += self.accRate.self.dt
+##            
+##        elif keys[pygame.K_w]:
+##            self.carMdl.velocity[1] -= self.accRate.self.dt
+##        
+##        if keys[pygame.K_d]:
+##            self.carMdl.velocity[0] += self.accRate.self.dt
+##            
+##        elif keys[pygame.K_a]:
+##            self.carMdl.velocity[0] -= self.accRate.self.dt
         
     def _readDirKeys(self, keys):
+        """Sample the keys and update the variables of the car"""
         if keys[pygame.K_q]:
             self.carMdl.addAcc(-self.accRate)
             
@@ -98,11 +90,20 @@ class Simulator():
         if keys[pygame.K_z]:
             self.carMdl.setVel(0)
 
-    def _draw(self, car):
-        car, carRect = car
+    def _draw(self):
+        """Draw the car's glob"""
+        car, carRect = self._rotCar()
         self.win.fill(self.bgColor) #< Fill the canvas with background color
         self.win.blit(car, carRect) #< Draw the car surface on the canvas
         pygame.display.update()
+
+    def _rotCar(self):
+        """Rotate and position the car's glob"""
+        heading_deg = -self.carMdl.getHeading(units='deg')
+        pos_pix = self.carMdl.getPosition()
+        car = pygame.transform.rotate(self.car, heading_deg)
+        carRect = car.get_rect(center=pos_pix)
+        return car, carRect
 
 if __name__ == "__main__":
     pygame.init()

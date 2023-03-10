@@ -58,6 +58,17 @@ def negR(R) -> list:
     R[0][1] *= -1
     R[1][0] *= -1
     return R
+
+def radToDeg(rad) -> float:
+    """Convert radians to degrees"""
+    return 180*rad/math.pi # or use this math.degrees(rad)
+
+def modulu(val, modulu):
+    while val > modulu:
+        val -= modulu
+    while val < -modulu:
+        val += modulu
+    return val
     
 def clip(val, Min, Max) -> float:
     """ Return the cliped (clamp) result of the input value """
