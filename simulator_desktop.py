@@ -33,7 +33,6 @@ class Simulator():
 ##        self.car = pygame.Surface((10,10), pygame.SRCALPHA)
 ##        self.car.fill("Gray")
 
-        self.start()
 
     def start(self):
         self.run = True
@@ -106,5 +105,29 @@ class Simulator():
         return car, carRect
 
 if __name__ == "__main__":
+    import time
+    import math
+    import threading
+    
     pygame.init()
     sim = Simulator(30, imageWidth=30)
+    threading.Thread(target=sim.start).start()
+    vel = 40
+    targetPos = (500, 0)
+    sim.carMdl.state.Px = 100
+    sim.carMdl.state.Py = 100
+    time.sleep(1.5)
+    while True:
+        time.sleep(0.01)
+        currentPos = (sim.carMdl.state.Px, sim.carMdl.state.Py)
+        currentAngle = sim.carMdl.state.heading
+        targetAngle = (math.atan2((targetPos[1]-currentPos[1]), (targetPos[0]-currentPos[0])))
+        print(targetAngle)
+        sim.carMdl.setSteering((targetAngle-currentAngle))
+        
+        if abs(currentPos[0]-targetPos[0]) < 5 and abs(currentPos[1]-targetPos[1]) < 5:
+            sim.carMdl.setVel(0)
+        else:
+            sim.carMdl.setVel(vel)
+        
+        # print(math.degrees(sim.carMdl.input.steering))
