@@ -8,7 +8,7 @@ class Car:
     def __init__(self, vel=40):
         self.targetPos = None
         self.currentPos = None
-        self.angle = None
+        self.currentAngle = None
         self.lastPacket = None
         self.vel = vel
         self.run = False
@@ -64,8 +64,8 @@ class Car:
                         data = json.loads(data.replace("'", '"'))
                         if data["type"] == "pos":
                             self.currentPos = data["pos"]
-                            self.angle = data["angle"]
-                            print("updatedPosition")
+                            self.currentAngle = self.getShortestAngle(data["angle"])
+                            self.calc()
                         elif data["type"] == "newPos":
                             self.targetPos = data["pos"]
                             
@@ -73,22 +73,32 @@ class Car:
                             self._sendERROR()
                     else:
                         self._sendERROR()
-
-    def start(self):
-        self.run = True
-        while self.run:
-            time.sleep(0.1)
-            if self.targetPos != None and self.currentPos != None:
-                targetAngle = (math.atan2((self.targetPos[1]-self.currentPos[1]), (self.targetPos[0]-self.currentPos[0])))
-                angle = targetAngle-self.angle
-                self._sendPosPacket(angle, self.vel)
-                
-                if abs(self.currentPos[0]-self.targetPos[0]) < 5 and abs(self.currentPos[1]-self.targetPos[1]) < 5:
-                    self._sendPosPacket(angle, 0)
-                    self._sendEndPacket()
-                    time.sleep(1.5)
-                
-                # print(math.degrees(sim.carMdl.input.steering))
+    def getShortestAngle(self, angle):
+        if abs(angle) > math.pi:
+            if angle > 0:
+                angle = -2*math.pi + angle
+            else:
+                angle = 2*math.pi + angle
+        return(angle)
+    
+    def calc(self):
+        if self.targetPos != None and self.currentPos != None:
+            # print(f"target pos is {self.targetPos}")
+            # print(f"current pos is {self.currentPos}")
+            targetAngle = (math.atan2((self.targetPos[1]-self.currentPos[1]), (self.targetPos[0]-self.currentPos[0])))
+            angle = self.getShortestAngle(targetAngle-self.currentAngle)
+            print(f"final angle is {angle}, current angle is {self.currentAngle}, target angle is {targetAngle}, ERROR is {targetAngle-angle}")
+            self._sendPosPacket(angle/abs(self.vel), self.vel)
+            # print(f"angle is {angle/self.vel}, and angle/vel is {angle/self.vel}")
+            # self._sendPosPacket(0, self.vel)
+            
+            if abs(self.currentPos[0]-self.targetPos[0]) < 2 and abs(self.currentPos[1]-self.targetPos[1]) < 2:
+                self.targetPos = None
+                self._sendPosPacket(0, 0)
+                self._sendEndPacket()
+                time.sleep(0.5)
+            
+            # print(math.degrees(sim.carMdl.input.steering))
     def stop(self):
         self.run = False
 
@@ -96,8 +106,9 @@ if __name__ == "__main__":
     import sys
     car = Car()
     try:
-        car.start()
+        while True:
+            time.sleep(0.1)
     except KeyboardInterrupt:
         car.mqtt.disconnect()
-        time.sleep(1)
+        time.sleep(0.5)
         sys.exit(0)
