@@ -6,12 +6,12 @@ import mqttComunication as comunication
 from modules import codes
 
 class Simulator():
-    def __init__(self, fps, size=(500, 500), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
-        self.size = size
+    def __init__(self, fps, size=(340*2, 290*2), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
+        self.size = size   # a pixel is 5mm
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
         self.carMdl = CarClass.Car(self.dt)
-        self.accRate = 10             #< pix/sec^2/command
+        self.accRate = 10             #< cm/sec^2/command
         self.steeringRate = 0.0002     #< rad/sec/command
         self.bgColor = bgColor
         self.selfControll = selfControll
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     
     pygame.init()
     
-    sim = Simulator(30, imageWidth=30, selfControll=False, sendMqtt=True)
+    sim = Simulator(30, imageWidth=40, selfControll=False, sendMqtt=True)
     try:
         sim.start()
     except KeyboardInterrupt:
