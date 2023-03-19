@@ -3,7 +3,7 @@ import pygame
 import numpy as np
 from modules import CarClass
 import mqttCommunication as communication
-from modules import codes
+from collections import deque
 
 class Simulator():
     def __init__(self, fps, size=(340*2, 290*2), selfControl=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
@@ -16,6 +16,7 @@ class Simulator():
         self.bgColor = bgColor
         self.selfControl = selfControl
         self.run = False
+        self.que = deque(maxlen=10)
         
         self.vel = 0
         self.time = 0
