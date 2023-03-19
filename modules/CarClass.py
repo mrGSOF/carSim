@@ -65,10 +65,25 @@ class Car():
         steering = self.input.steering +dRad
         self.input.steering = ml.clip(steering, self.Min, self.Max)
 
+    def getSteering(self, units='r'):
+        """Returns the car's steeringng angle in rad or degrees"""
+        steering = self.input.steering #self.state.steering
+        if units[0] == 'd':
+            return ml.radToDeg(steering)
+        return steering
+
     def getPosition(self):
         """Returns the car's position (Px, Py)"""
         return (self.state.Px, self.state.Py)
     
+    def getVel(self):
+        """Returns the car's velocity (pix/s)"""
+        return self.state.V
+
+    def getAcc(self):
+        """Returns the car's accelarometer (pix/s^2)"""
+        return self.input.acc
+
     def getHeading(self, units='r'):
         """Returns the car's heading in rad or degrees"""
         heading = self.state.heading
