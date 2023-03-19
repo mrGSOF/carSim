@@ -2,11 +2,11 @@ import json
 import pygame
 import numpy as np
 from modules import CarClass
-import mqttComunication as comunication
+import mqttCommunication as communication
 from modules import codes
 
 class Simulator():
-    def __init__(self, fps, size=(340*2, 290*2), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
+    def __init__(self, fps, size=(340*2, 290*2), selfControl=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
         self.size = size   # a pixel is 5mm
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
@@ -14,10 +14,9 @@ class Simulator():
         self.accRate = 10             #< cm/sec^2/command
         self.steeringRate = 0.0002     #< rad/sec/command
         self.bgColor = bgColor
-        self.selfControll = selfControll
+        self.selfControl = selfControl
         self.run = False
         
-        self.targetPoses = [(200, 200),(100, 100),(100, 0),(0, 0)]
         self.lastPos = None
         self.lastPacket = None
 
@@ -45,7 +44,7 @@ class Simulator():
                 self.broker = settings["mqtt"]["broker"]
                 self.topic = settings["mqtt"]["topic"]
                 
-            self.mqtt = comunication.COM(self.broker, name="ArduCarServer", sendId=True)
+            self.mqtt = communication.COM(self.broker, name="ArduCarServer", sendId=True)
             self.mqtt.changeOnMessage(self._onMessage)
             self.mqtt.subscribe(self.topic)
             self.mqtt.loop_forever()
@@ -60,34 +59,21 @@ class Simulator():
         
         if senderId != self.mqtt.name:
             if len(data) == dataLen:
-                if data.isdigit():
-                    data = int(data)
-                    if data == codes.carCodes.ACKNOWLEGE:
-                        print("message recieved")
-                        pass #stop resending
-                    
-                    elif data == codes.carCodes.FINISHED:
-                        print("recieved end packet, sending new pos")
-                        if len(self.targetPoses) > 0:
-                             self._sendNewPosPacket(self.targetPoses.pop(0))
-                        else:
-                            self._sendEndPacket()
-                        
-                    
-                    elif data == codes.carCodes.ERROR:
-                        self._sendLastPacket()
-                        print("message not recieved properly, resending")
-                    
+                
+                if data.strip()[0] == "{" and data[-1] == "}":
+                    data = json.loads(data.replace("'", '"'))
+                    steeringAngle = data["steering"]
+                    velocity = data["velocity"]
+                    distance = int(data["distance"])
+                    time = int(data["time"])*self.maxFPS
+                    if distance != -1:
+                        time = distance/(velocity)
+                    self.time = time
+                    self.vel = np.clip(float(steeringAngle), -2, 2)
+                    self.carMdl.setSteering()
+
                 else:
-                    if data.strip()[0] == "{" and data[-1] == "}":
-                        data = json.loads(data.replace("'", '"'))
-                        steeringAngle = data["steering"]
-                        velocity = data["velocity"]
-                        self.carMdl.setSteering(np.clip(float(steeringAngle), -2, 2))
-                        self.carMdl.setVel(float(velocity))
-                    else:
-                        print("json error")
-                        self._sendERROR()
+                    print("json error")
                             
 
 
@@ -101,23 +87,12 @@ class Simulator():
         self.mqtt.disconnect()
         pygame.quit()
 
-    def _sendERROR(self):
-        self.lastPacket = codes.carCodes.ERROR
-        self._sendLastPacket()
         
     def _sendLastPacket(self):
         self.mqtt.publish(self.topic, {"len": len(str(self.lastPacket)), "data": self.lastPacket})
 
     def _sendPosPacket(self, pos, angle):
-        self.lastPacket = {"type": "pos", "pos": pos, "angle": angle}
-        self._sendLastPacket()
-
-    def _sendNewPosPacket(self, pos):
-        self.lastPacket = {"type": "newPos", "pos": pos}
-        self._sendLastPacket()
-    
-    def _sendEndPacket(self):
-        self.lastPacket = codes.carCodes.FINISHED
+        self.lastPacket = {"pos": pos, "angle": angle}
         self._sendLastPacket()
     
     def _runSimulator(self):
@@ -130,18 +105,18 @@ class Simulator():
         Returns:
             None
         """
-        self._sendNewPosPacket(self.targetPoses.pop(0))
-        self._sendPosPacket((self.carMdl.state.Px, self.carMdl.state.Py), self.carMdl.state.heading)
         while self.run:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.run = False
-                if self.selfControll:
+                if self.selfControl:
                     keys = pygame.key.get_pressed()
-##                    self._readAccKeys(keys)
                     self._readDirKeys(keys)
-                
-                    
+
+            if self.time != 0:
+                self.carMdl.setVel(float(self.vel))
+                if self.time != -1:
+                    self.time -= 1
             self.carMdl.update()
             self._draw()
             self.clock.tick(self.maxFPS)
@@ -173,6 +148,7 @@ class Simulator():
         car, carRect = self._rotCar()
         self.win.fill(self.bgColor) #< Fill the canvas with background color
         self.win.blit(car, carRect) #< Draw the car surface on the canvas
+        pygame.draw.circle(self.win, (255,0,0), (200,100), 2, width=0)
         pygame.display.update()
 
     def _rotCar(self):
@@ -184,34 +160,11 @@ class Simulator():
         return car, carRect
 
 if __name__ == "__main__":
-    # import time
-    # import math
-    # import threading
-    import sys
     
     pygame.init()
     
-    sim = Simulator(30, imageWidth=40, selfControll=False, sendMqtt=True)
+    sim = Simulator(30, imageWidth=40, selfControl=False, sendMqtt=True)
     try:
         sim.start()
     except KeyboardInterrupt:
         sim.stop()
-    # threading.Thread(target=sim.start).start()
-    # vel = 40
-    # targetPos = (500, 0)
-    # sim.carMdl.state.Px = 100
-    # sim.carMdl.state.Py = 100
-    # time.sleep(1.5)
-    # while True:
-    #     time.sleep(0.01)
-    #     currentPos = (sim.carMdl.state.Px, sim.carMdl.state.Py)
-    #     currentAngle = sim.carMdl.state.heading
-    #     targetAngle = (math.atan2((targetPos[1]-currentPos[1]), (targetPos[0]-currentPos[0])))
-    #     sim.carMdl.setSteering((targetAngle-currentAngle))
-        
-    #     if abs(currentPos[0]-targetPos[0]) < 5 and abs(currentPos[1]-targetPos[1]) < 5:
-    #         sim.carMdl.setVel(0)
-    #     else:
-    #         sim.carMdl.setVel(vel)
-        
-    #     # print(math.degrees(sim.carMdl.input.steering))
