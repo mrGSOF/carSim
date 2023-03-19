@@ -17,6 +17,9 @@ class Simulator():
         self.selfControl = selfControl
         self.run = False
         
+        self.vel = 0
+        self.time = 0
+        
         self.lastPos = None
         self.lastPacket = None
 
@@ -70,7 +73,7 @@ class Simulator():
                         time = distance/(velocity)
                     self.time = time
                     self.vel = np.clip(float(steeringAngle), -2, 2)
-                    self.carMdl.setSteering()
+                    self.carMdl.setSteering(steeringAngle)
 
                 else:
                     print("json error")
@@ -115,7 +118,7 @@ class Simulator():
 
             if self.time != 0:
                 self.carMdl.setVel(float(self.vel))
-                if self.time != -1:
+                if self.time > 0:
                     self.time -= 1
             self.carMdl.update()
             self._draw()
