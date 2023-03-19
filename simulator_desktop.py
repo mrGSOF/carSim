@@ -72,8 +72,8 @@ class Simulator():
                     if distance != -1:
                         time = distance/(velocity)
                     self.time = time
-                    self.vel = np.clip(float(steeringAngle), -2, 2)
-                    self.carMdl.setSteering(steeringAngle)
+                    self.vel = velocity
+                    self.carMdl.setSteering(np.clip(float(steeringAngle), -2, 2))
 
                 else:
                     print("json error")
