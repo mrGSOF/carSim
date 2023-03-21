@@ -3,7 +3,7 @@ from modules import CarClass
 from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator():
-    def __init__(self, fps, size=(600, 650), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
+    def __init__(self, fps, size=(600, 650), selfControl=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
         self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
@@ -11,7 +11,7 @@ class Simulator():
         self.accRate = 10             #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
-        self.selfControll = selfControll
+        self.selfControl = selfControl
         self.run = False
 
         self.clock = pygame.time.Clock()
@@ -127,7 +127,7 @@ class Simulator():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.stop()
-                if self.selfControll:
+                if self.selfControl:
                     keys = pygame.key.get_pressed()
 ##                    self._readAccKeys(keys)
                     self._readDirKeys(keys)

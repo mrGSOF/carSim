@@ -135,7 +135,7 @@ class Simulator():
             "heading":head,
             "speedometer":spd,
             "steeringWheel":turn,
-            "accelaration":acc,
+            "acceleration":acc,
             }
     
     def _onMessage(self, client, clientDat, msg):
@@ -247,7 +247,7 @@ class Simulator():
         self.gauges['heading'].update(self.carMdl.getHeading(units="deg"))
         self.gauges['steeringWheel'].update(self.carMdl.getSteering(units="deg"))
         self.gauges['speedometer'].update(self.carMdl.getVel())
-        self.gauges['accelaration'].update(self.carMdl.getAcc())
+        self.gauges['acceleration'].update(self.carMdl.getAcc())
 
     def _draw(self):
         """Draw the car's glob"""
