@@ -1,4 +1,5 @@
 import json
+import time
 import pygame
 import numpy as np
 from modules import CarClass
@@ -16,6 +17,7 @@ class Simulator():
         self.bgColor = bgColor
         self.selfControl = selfControl
         self.run = False
+        self.waitingForNextPacket = False
         self.que = deque(maxlen=10)
         
         self.vel = 0
@@ -71,10 +73,9 @@ class Simulator():
                     distance = int(data["distance"])
                     time = int(data["time"])*self.maxFPS
                     if distance != -1:
-                        time = distance/(velocity)
-                    self.time = time
-                    self.vel = velocity
-                    self.carMdl.setSteering(np.clip(float(steeringAngle), -2, 2))
+                        time = abs((distance/velocity)*self.maxFPS)
+                    self.que.append({"steering": steeringAngle, "velocity": velocity, "time": time})
+
 
                 else:
                     print("json error")
@@ -110,6 +111,13 @@ class Simulator():
             None
         """
         while self.run:
+            if self.time <= 0 and self.que:
+                self.waitingForNextPacket = False
+                packet = self.que.popleft()
+                print(packet)
+                self.time = packet["time"]
+                self.vel = packet["velocity"]
+                self.carMdl.setSteering(np.clip(float(packet["steering"]), -2, 2))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.run = False
@@ -124,7 +132,11 @@ class Simulator():
             self.carMdl.update()
             self._draw()
             self.clock.tick(self.maxFPS)
-            self._sendPosPacket((self.carMdl.state.Px, self.carMdl.state.Py), self.carMdl.state.heading)
+            if not self.que and self.waitingForNextPacket == False and self.time <= 0:
+                print("sending pos")
+                self.waitingForNextPacket = True
+                self._sendPosPacket((self.carMdl.state.Px, self.carMdl.state.Py), self.carMdl.state.heading)
+
         self.stop()
         
     def _readDirKeys(self, keys):
@@ -152,7 +164,7 @@ class Simulator():
         car, carRect = self._rotCar()
         self.win.fill(self.bgColor) #< Fill the canvas with background color
         self.win.blit(car, carRect) #< Draw the car surface on the canvas
-        pygame.draw.circle(self.win, (255,0,0), (200,100), 2, width=0)
+        pygame.draw.circle(self.win, (255,0,0), (200,200), 2, width=0)
         pygame.display.update()
 
     def _rotCar(self):
