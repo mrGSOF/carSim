@@ -1,13 +1,14 @@
+import os
 import pygame
 from modules import CarClass
 from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator():
-    def __init__(self, fps, size=(600, 650), selfControll=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
+    def __init__(self, fps, size=(600, 750), selfControll=True, imagePath=r"./images", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
         self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
-        self.carMdl = CarClass.Car(self.dt)
+        self.carMdl = CarClass.Car(dt=self.dt, position=(60,60))
         self.accRate = 10             #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
@@ -17,8 +18,14 @@ class Simulator():
         self.clock = pygame.time.Clock()
         self.win = pygame.display.set_mode(size)
 
+        self.car   = pygame.image.load( os.path.join(imagePath, "car.png") )
 
-        self.car = pygame.image.load(imagePath)
+        self.track = pygame.transform.scale(
+            #pygame.image.load( os.path.join(imagePath, "track.png")),
+            pygame.image.load( os.path.join(imagePath, "region.png")),
+            (size[0], size[0]))
+        self.track_mask = pygame.mask.from_surface(self.track)
+
         carRect = self.car.get_rect()
         if imageWidth== None and imageHeight == None:
             carSize = (carRect[2], carRect[3])
@@ -31,9 +38,11 @@ class Simulator():
             
         carSize = (imageWidth, imageHeight)
         self.car = pygame.transform.scale(self.car, carSize)
+        self._rotCar()
+
         self.initCockpit( pos = (0, self.size[1]-150))
 
-    def initCockpit(self, pos=(0,0)):
+    def initCockpit(self, pos=(0,0)) -> None:
         #Scaling the indicators
         scale = 1.0
         gap = 0
@@ -115,44 +124,35 @@ class Simulator():
             }
         self.start()
 
-    def start(self):
+    def start(self) -> None:
         self.run = True
         self._runSimulator()
 
-    def stop(self):
+    def stop(self) -> None:
         self.run = False
     
-    def _runSimulator(self):
+    def _runSimulator(self) -> None:
         while self.run:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.stop()
                 if self.selfControll:
                     keys = pygame.key.get_pressed()
-##                    self._readAccKeys(keys)
                     self._readDirKeys(keys)
                     
+##            print( self._isCollision() )
+            if self._isCollision() != None:
+##                print( self.carMdl.getPosition() )
+##                print("Collision detected")
+                self._bounceCar()
             self.carMdl.update()
-            self.gaugesUpdate()
+            self._gaugesUpdate()
             
             self._draw()
             self.clock.tick(self.maxFPS)
         pygame.quit()
 
-##    def _readAccKeys(self, keys):
-##        if keys[pygame.K_s]:
-##            self.carMdl.velocity[1] += self.accRate.self.dt
-##            
-##        elif keys[pygame.K_w]:
-##            self.carMdl.velocity[1] -= self.accRate.self.dt
-##        
-##        if keys[pygame.K_d]:
-##            self.carMdl.velocity[0] += self.accRate.self.dt
-##            
-##        elif keys[pygame.K_a]:
-##            self.carMdl.velocity[0] -= self.accRate.self.dt
-        
-    def _readDirKeys(self, keys):
+    def _readDirKeys(self, keys) -> None:
         """Sample the keys and update the variables of the car"""
         if keys[pygame.K_q]:
             self.carMdl.addAcc(-self.accRate)
@@ -172,7 +172,7 @@ class Simulator():
         if keys[pygame.K_z]:
             self.carMdl.setVel(0)
 
-    def gaugesUpdate(self):
+    def _gaugesUpdate(self) -> None:
         self.gauges['heading'].update(self.carMdl.getHeading(units="deg"))
         self.gauges['steeringWheel'].update(self.carMdl.getSteering(units="deg"))
         self.gauges['speedometer'].update(self.carMdl.getVel())
@@ -182,21 +182,44 @@ class Simulator():
         """Draw the car"s glob"""
         car, carRect = self._rotCar()
         self.win.fill(self.bgColor) #< Fill the canvas with background color
+        self.win.blit(self.track, (0,0))
         self.win.blit(car, carRect) #< Draw the car surface on the canvas
+        overlap_surf = self._isCollision()
+        if overlap_surf != None:
+            self.win.blit(overlap_surf, (0,0))
         for gauge in self.gauges:
             #print(gauge)
             self.gauges[gauge].draw()
 
         pygame.display.update()
 
-    def _rotCar(self):
+    def _rotCar(self) -> list:
         """Rotate and position the car"s glob"""
         heading_deg = -self.carMdl.getHeading(units="deg")
         pos_pix = self.carMdl.getPosition()
         car = pygame.transform.rotate(self.car, heading_deg)
+        self.car_mask = pygame.mask.from_surface(car)
         carRect = car.get_rect(center=pos_pix)
-        return car, carRect
+        return (car, carRect)
 
+    def _isCollision(self, x=16, y=10) -> bool:
+        pos = self.carMdl.getPosition()
+        offset = (int(pos[0] -x), int(pos[1]) -y)
+        poi = self.track_mask.overlap(self.car_mask, offset)
+        overlap_surf = None
+        if poi != None:
+            overlap_mask = self.track_mask.overlap_mask(self.car_mask, offset)
+            overlap_surf = overlap_mask.to_surface(setcolor = (255, 0, 0))
+            overlap_surf.set_colorkey((0, 0, 0))
+        return overlap_surf
+
+    def _bounceCar(self):
+        V = 0.8*self.carMdl.getVel()
+        if V:
+            V *= -1
+        self.carMdl.setVel(V)
+        self.carMdl.setAcc(0)
+            
 if __name__ == "__main__":
     pygame.init()
     sim = Simulator(30, imageWidth=30)
