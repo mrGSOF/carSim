@@ -72,14 +72,13 @@ class Car:
     def calc(self):
         if self.targetPos != None and self.currentPos != None:
 
-                
             targetAngle = (math.atan2((self.targetPos[1]-self.currentPos[1]), (self.targetPos[0]-self.currentPos[0])))
             angle = self.getShortestAngle(targetAngle-self.currentAngle)
             distance = math.sqrt((self.targetPos[1]-self.currentPos[1])**2 + (self.targetPos[0]-self.currentPos[0])**2)
             # print(f"final angle is {angle}, current angle is {self.currentAngle}, target angle is {targetAngle}, ERROR is {targetAngle-angle}")
             if self.first:
                 self.first = False
-                
+
                 print(f"[{self.targetPos}] angle {angle}, vel {self.vel}, divided {self.vel*(2.2)}, distance {distance}")
             print(f"angle {(angle/abs(self.vel))} vel {self.vel} distance {distance}")
             self._sendPosPacket(-1*(angle/abs(self.vel)), -1*self.vel, distance=self.vel/2)

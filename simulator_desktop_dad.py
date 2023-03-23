@@ -1,32 +1,19 @@
-import json
-import time
 import os
 import pygame
-import numpy as np
 from modules import CarClass
-import mqttCommunication as communication
-from collections import deque
 from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator():
-    def __init__(self, fps, size=(340*2, 290*2), selfControl=True, imagePath=r"./images", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
-        self.size = size   # a pixel is 5mm
+    def __init__(self, fps, size=(600, 750), selfControll=True, imagePath=r"./images", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
+        self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
-        self.carMdl = CarClass.Car(dt=self.dt, position=(100,100))
+        self.carMdl = CarClass.Car(dt=self.dt, position=(60,60))
         self.accRate = 10             #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
-        self.selfControl = selfControl
+        self.selfControll = selfControll
         self.run = False
-        self.waitingForNextPacket = False
-        self.que = deque(maxlen=10)
-        
-        self.vel = 0
-        self.time = 0
-        
-        self.lastPos = None
-        self.lastPacket = None
 
         self.clock = pygame.time.Clock()
         self.win = pygame.display.set_mode(size)
@@ -52,18 +39,8 @@ class Simulator():
         carSize = (imageWidth, imageHeight)
         self.car = pygame.transform.scale(self.car, carSize)
         self._rotCar()
-        self.sendMqtt = sendMqtt
-        if self.sendMqtt:
-            with open("settings.json", "r") as f:
-                settings = json.load(f)
-                self.broker = settings["mqtt"]["broker"]
-                self.topic = settings["mqtt"]["topic"]
-                
-            self.mqtt = communication.COM(self.broker, name="ArduCarServer", sendId=True)
-            self.mqtt.changeOnMessage(self._onMessage)
-            self.mqtt.subscribe(self.topic)
-            self.mqtt.loop_forever()
-            self.initCockpit( pos = (0, self.size[1]-150))
+
+        self.initCockpit( pos = (0, self.size[1]-150))
 
     def initCockpit(self, pos=(0,0)) -> None:
         #Scaling the indicators
@@ -143,103 +120,39 @@ class Simulator():
             "heading":head,
             "speedometer":spd,
             "steeringWheel":turn,
-            "acceleration":acc,
+            "accelaration":acc,
             }
-    
-    def _onMessage(self, client, clientDat, msg):
-        msg = msg.payload.decode("utf-8")
-        data = json.loads(msg)
-        dataLen = int(data["len"])
-        senderId = data["senderId"]
-        data = str(data["data"])
-        
-        
-        if senderId != self.mqtt.name:
-            if len(data) == dataLen:
-                
-                if data.strip()[0] == "{" and data[-1] == "}":
-                    data = json.loads(data.replace("'", '"'))
-                    steeringAngle = data["steering"]
-                    velocity = data["velocity"]
-                    distance = int(data["distance"])
-                    time = int(data["time"])*self.maxFPS
-                    if distance != -1:
-                        time = int(abs((distance/velocity)*self.maxFPS))
-                    self.que.append({"steering": steeringAngle, "velocity": velocity, "time": time})
+        self.start()
 
-
-                else:
-                    print("json error")
-                            
-
-
-    def start(self):
+    def start(self) -> None:
         self.run = True
         self._runSimulator()
 
     def stop(self) -> None:
         self.run = False
-        print("exiting this shithole")
-        self.mqtt.disconnect()
-        pygame.quit()
-
-        
-    def _sendLastPacket(self):
-        self.mqtt.publish(self.topic, {"len": len(str(self.lastPacket)), "data": self.lastPacket})
-
-    def _sendPosPacket(self, pos, angle):
-        self.lastPacket = {"pos": pos, "angle": angle}
-        self._sendLastPacket()
     
-    def _runSimulator(self):
-        """
-        Runs the simulator, updating the car model and drawing the screen.
-
-        Parameters: 
-            self (Simulator): The simulator object.
-
-        Returns:
-            None
-        """
+    def _runSimulator(self) -> None:
         while self.run:
-            if self.time <= 0 and self.que:
-                self.waitingForNextPacket = False
-                packet = self.que.popleft()
-                print(packet)
-                self.time = packet["time"]
-                self.vel = packet["velocity"]
-                self.carMdl.setSteering(np.clip(float(packet["steering"]), -2, 2))
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.run = False
-                if self.selfControl:
+                    self.stop()
+                if self.selfControll:
                     keys = pygame.key.get_pressed()
                     self._readDirKeys(keys)
-            if self.time != 0:
-                self.carMdl.setVel(float(self.vel))
-                if self.time > 0:
-                    self.time -= 1
-
-            # print( self._isCollision() )
+                    
+##            print( self._isCollision() )
             if self._isCollision() != None:
-                # print( self.carMdl.getPosition() )
-                # print("Collision detected")
+##                print( self.carMdl.getPosition() )
+##                print("Collision detected")
                 self._bounceCar()
-
             self.carMdl.update()
             self._gaugesUpdate()
             
             self._draw()
             self.clock.tick(self.maxFPS)
-            window = pygame.surfarray.array3d(self.win)
-            if not self.que and self.waitingForNextPacket == False and self.time <= 0:
-                print("sending pos")
-                self.waitingForNextPacket = True
-                self._sendPosPacket((self.carMdl.state.Px, self.carMdl.state.Py), self.carMdl.state.heading)
+        pygame.quit()
 
-        self.stop()
-        
-    def _readDirKeys(self, keys):
+    def _readDirKeys(self, keys) -> None:
         """Sample the keys and update the variables of the car"""
         if keys[pygame.K_q]:
             self.carMdl.addAcc(-self.accRate)
@@ -263,10 +176,10 @@ class Simulator():
         self.gauges['heading'].update(self.carMdl.getHeading(units="deg"))
         self.gauges['steeringWheel'].update(self.carMdl.getSteering(units="deg"))
         self.gauges['speedometer'].update(self.carMdl.getVel())
-        self.gauges['acceleration'].update(self.carMdl.getAcc())
+        self.gauges['accelaration'].update(self.carMdl.getAcc())
 
     def _draw(self):
-        """Draw the car's glob"""
+        """Draw the car"s glob"""
         car, carRect = self._rotCar()
         self.win.fill(self.bgColor) #< Fill the canvas with background color
         self.win.blit(self.track, (0,0))
@@ -274,7 +187,6 @@ class Simulator():
         overlap_surf = self._isCollision()
         if overlap_surf != None:
             self.win.blit(overlap_surf, (0,0))
-        pygame.draw.circle(self.win, (255,0,0), (200,200), 2, width=0)
         for gauge in self.gauges:
             #print(gauge)
             self.gauges[gauge].draw()
@@ -288,7 +200,7 @@ class Simulator():
         car = pygame.transform.rotate(self.car, heading_deg)
         self.car_mask = pygame.mask.from_surface(car)
         carRect = car.get_rect(center=pos_pix)
-        return(car, carRect)
+        return (car, carRect)
 
     def _isCollision(self, x=16, y=10) -> bool:
         pos = self.carMdl.getPosition()
@@ -309,11 +221,5 @@ class Simulator():
         self.carMdl.setAcc(0)
             
 if __name__ == "__main__":
-    
     pygame.init()
-    
-    sim = Simulator(30, imageWidth=40, selfControl=False, sendMqtt=True)
-    try:
-        sim.start()
-    except KeyboardInterrupt:
-        sim.stop()
+    sim = Simulator(30, imageWidth=30)
