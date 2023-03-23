@@ -1,5 +1,4 @@
 import json
-import time
 import os
 import pygame
 import numpy as np

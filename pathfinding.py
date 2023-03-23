@@ -1,6 +1,6 @@
+import time
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 from astar.search import AStar
 
 def imgToGrid(img, line_color=(0, 255, 0), thickness=1, type_=cv2.LINE_AA, pxstep=10):
@@ -47,32 +47,34 @@ def resize(img, width=None, height=None):
     return(img)
         
 
-def getPath(img):
-    targetPos = (145, 100)
+def getPath(img, dev=False):
+    targetPos = (100, 100)
     
-    
-    img = cv2.imread("images/reference.png", cv2.IMREAD_GRAYSCALE)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     img = resize(img, width = 150)
-    img = cv2.circle(img, targetPos, radius=2, color=(3), thickness=-1)
-    cv2.imshow("original image", img)
-    cv2.waitKey(1)
+
     print(img.shape)
 
-    img = np.where(img<112, 0, 1).astype(np.uint8)
-
+    img = np.where(img<112, 1, 0).astype(np.uint8)
     
-    print("finding path...")
-    path = AStar(img).search((0,0), (targetPos[1], targetPos[0]))
-    print("found path")
+    # print("finding path...")
+    path = AStar(img).search((0,0), targetPos)
+    # print("found path")
     
-    if path != None:
-        for dot in path:
-            img = cv2.circle(img, (dot[1], dot[0]), radius=2, color=(3), thickness=-1)
-        # print(np.where((img != 1) & (img != 0)))
-        print(img[int(720/2)-1, int(519)-1])
-        cv2.imshow("path", img)
+    if dev:
+        img = np.where(img==0, 255, 0).astype(np.uint8)
+        if path != None:
+            for dot in path:
+                img = cv2.circle(img, (dot[1], dot[0]), radius=0, color=(0, 255, 0), thickness=-1)
+            # print(np.where((img != 1) & (img != 0)))
+            # print(img[int(720/2)-1, int(519)-1])
+            cv2.imshow("path", img)
+            cv2.waitKey(1)
 
 
-    print(path)
-getPath(1)
+    return(path)
+
+path = getPath(cv2.imread("./images/reference.png"), dev=True)
+time.sleep(10)
+print(path)
