@@ -47,7 +47,7 @@ def resize(img, width=None, height=None):
     return(img)
         
 
-def getPath(img, dev=False):
+def getPath(img, paddingSize = 2, dev=False):
     targetPos = (100, 100)
     
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -57,9 +57,14 @@ def getPath(img, dev=False):
     print(img.shape)
 
     img = np.where(img<112, 1, 0).astype(np.uint8)
+    imgWithPadding = np.zeros(img.shape)
+    for rowIndex, row in enumerate(img):
+        for columnIndex, item in enumerate(row):
+            if item == 1:
+                imgWithPadding[rowIndex-paddingSize:rowIndex+paddingSize+1,columnIndex-paddingSize:columnIndex+paddingSize+1] = 1
     
     # print("finding path...")
-    path = AStar(img).search((0,0), targetPos)
+    path = AStar(imgWithPadding).search((0,0), targetPos)
     # print("found path")
     
     if dev:
