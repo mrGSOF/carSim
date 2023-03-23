@@ -1,7 +1,10 @@
 import json
 import os
+import cv2
 import pygame
+import time
 import numpy as np
+import base64
 from modules import CarClass
 import mqttCommunication as communication
 from collections import deque
@@ -187,7 +190,20 @@ class Simulator():
         self.mqtt.publish(self.topic, {"len": len(str(self.lastPacket)), "data": self.lastPacket})
 
     def _sendPosPacket(self, pos, angle):
-        self.lastPacket = {"pos": pos, "angle": angle}
+        img = pygame.surfarray.array3d(self.win)
+        # img = img.reshape(img.shape[1], img.shape[0], img.shape[2])
+        # cv2.imshow("asdSAD", img)
+        # cv2.waitKey(1)
+        # time.sleep(5)
+        print(img.shape)
+        # print(img)
+        _, img = cv2.imencode(".jpg", img)
+        with open("tmp.txt", "w")as f:
+            f.write(str(list(img)))
+        print(list(img))
+        img = base64.b64encode(img).decode("utf-8")
+            
+        self.lastPacket = {"pos": pos, "angle": angle, "img": (img)}
         self._sendLastPacket()
     
     def _runSimulator(self):
@@ -230,7 +246,6 @@ class Simulator():
             
             self._draw()
             self.clock.tick(self.maxFPS)
-            window = pygame.surfarray.array3d(self.win)
             if not self.que and self.waitingForNextPacket == False and self.time <= 0:
                 print("sending pos")
                 self.waitingForNextPacket = True

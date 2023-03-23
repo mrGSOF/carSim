@@ -1,21 +1,22 @@
 import time
 import math
 import json
+import numpy as np
 import mqttCommunication as communication
+import pathfinder
+import base64
+import cv2
 
 class Car:
-    def __init__(self, vel=40, targetPoses=[(200, 200),(100, 100),(100, 0),(0, 0)]):
+    def __init__(self, vel=40, targetPos = (300,300)):
         self.targetPos = None
         self.currentPos = None
         self.currentAngle = None
         self.lastPacket = None
         self.vel = vel
         self.run = False
-        self.targetPoses = targetPoses
-        if self.targetPoses:
-            self.targetPos = self.targetPoses.pop(0)
-        else:
-            raise Exception("[carMovement] targetPoses cannot be empty")
+        self.targetPos = targetPos
+
         
         ## debugging variables ###
         self.first = True
@@ -54,10 +55,20 @@ class Car:
                         data = json.loads(data.replace("'", '"'))
                         self.currentPos = data["pos"]
                         self.currentAngle = self.getShortestAngle(data["angle"])
+                        self.img = np.array(list(base64.b64decode(data["img"])))
+                        print(self.img)
+                        self.img = cv2.imdecode(self.img, cv2.IMREAD_COLOR)
+                        print(self.img)
+                        self.targetPoses = pathfinder.findPath(self.img, pos=self.currentPos, targetPos=self.targetPos, paddingSize=3)
+                        print(self.targetPoses)
+                        if self.targetPoses:
+                            self.targetPos = self.targetPoses.pop(0)
+                        else:
+                            raise Exception("[carMovement] targetPoses cannot be empty")
                         self.calc()
                         
-                    except:
-                        print("[CarMovementServer] received invalid packet!")
+                    except Exception as e:
+                        print(f"[CarMovementServer] received invalid packet!, error is {e}")
                 else:
                     print("[CarMovementServer] received invalid packet!")
 

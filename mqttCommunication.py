@@ -46,6 +46,7 @@ class COM:
                 
             else:
                 msg = {"senderId": self.name, "content": msg}
+            
             msg = json.dumps(msg)
 
         self.client.publish(topic, msg)
