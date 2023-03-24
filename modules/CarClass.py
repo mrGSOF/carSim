@@ -39,6 +39,7 @@ class Car():
         self.dt = dt
         self.Min = -0.5       #< Max steering angle (rad)
         self.Max = +0.5       #< Max steering angle (rad)
+        self.collideTimeout = 0
     
     def _start(self):
         raise Exception("this function does not exist in the simulator version of the car module")
@@ -91,6 +92,14 @@ class Car():
             return ml.radToDeg(heading)
         return heading
 
+    def collide(self, vector=None):
+        if (vector == None) and (self.collideTimeout == 0):
+            V = self.getVel()
+            Direction = V/abs(V)
+            self.setVel( -(0.8*V +5*Direction) )
+            self.setAcc(0)
+            self.collideTimeout = 5
+
     def update(self):
         """Calculate the next state value (X[n+1] = A[n]*x[n] +B[n]*u[n]"""
         self.A = self._calcStateTransitionMatrix()
@@ -99,6 +108,8 @@ class Car():
         Bu = ml.MxV(self.B, self.input.getVector())
         self.state.setFromVector(ml.addV(Ax, Bu))
         self.state.heading = ml.modulu(self.state.heading, 2*math.pi)
+        if self.collideTimeout > 0:
+            self.collideTimeout -= 1
         #print("Heading: %1.2f (rad)"%(self.state.heading))
 
     def _calcStateTransitionMatrix(self):

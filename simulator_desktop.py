@@ -69,7 +69,7 @@ class Simulator():
                                     "InToDeg":1,
                                     "InOffset":0,
                                     "DegMinMax":(-720, 720),
-                                    "Kp":0.5,
+                                    "Kp":0.3,
                                     }
                           )
 
@@ -109,7 +109,7 @@ class Simulator():
                              coefList={
                                        "InToDeg":-30.0,
                                        "InOffset":0.0,
-                                       "Kp":0.5,
+                                       "Kp":0.2,
                                        "DegMinMax":(-270,270),
                                        "DegOffset":0,
                                        "DegModulu":360,
@@ -140,11 +140,8 @@ class Simulator():
                     keys = pygame.key.get_pressed()
                     self._readDirKeys(keys)
                     
-##            print( self._isCollision() )
             if self._isCollision() != None:
-##                print( self.carMdl.getPosition() )
-##                print("Collision detected")
-                self._bounceCar()
+                self.carMdl.collide()
             self.carMdl.update()
             self._gaugesUpdate()
             
@@ -188,7 +185,6 @@ class Simulator():
         if overlap_surf != None:
             self.win.blit(overlap_surf, (0,0))
         for gauge in self.gauges:
-            #print(gauge)
             self.gauges[gauge].draw()
 
         pygame.display.update()
@@ -212,13 +208,6 @@ class Simulator():
             overlap_surf = overlap_mask.to_surface(setcolor = (255, 0, 0))
             overlap_surf.set_colorkey((0, 0, 0))
         return overlap_surf
-
-    def _bounceCar(self):
-        V = 0.8*self.carMdl.getVel()
-        if V:
-            V *= -1
-        self.carMdl.setVel(V)
-        self.carMdl.setAcc(0)
             
 if __name__ == "__main__":
     pygame.init()
