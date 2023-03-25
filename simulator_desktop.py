@@ -1,10 +1,8 @@
 import json
 import os
-import cv2
 import pygame
 import time
 import numpy as np
-import base64
 import compressing
 from modules import CarClass
 import mqttCommunication as communication
@@ -28,6 +26,7 @@ class Simulator():
         self.vel = 0
         self.time = 0
         
+        self.targetPoses = []
         self.lastPos = None
         self.lastPacket = None
 
@@ -155,8 +154,7 @@ class Simulator():
         dataLen = int(data["len"])
         senderId = data["senderId"]
         data = str(data["data"])
-        
-        
+
         if senderId != self.mqtt.name:
             if len(data) == dataLen:
                 
@@ -166,10 +164,11 @@ class Simulator():
                     velocity = data["velocity"]
                     distance = int(data["distance"])
                     time = int(data["time"])*self.maxFPS
+                    self.targetPoses = data["targetPoses"]
+                    print(f"[{type(self.targetPoses)}] {self.targetPoses}")
                     if distance != -1:
                         time = int(abs((distance/velocity)*self.maxFPS))
                     self.que.append({"steering": steeringAngle, "velocity": velocity, "time": time})
-
 
                 else:
                     print("json error")
@@ -283,7 +282,13 @@ class Simulator():
         for gauge in self.gauges:
             #print(gauge)
             self.gauges[gauge].draw()
-
+        
+        for pos in self.targetPoses:
+            print(pos)
+            pygame.draw.circle(self.win, (200, 200, 255), pos, 2)
+        
+        # pygame.draw.circle(self.win, (0, 255, 0), (self.carMdl.state.Px, self.carMdl.state.Py), 2)
+        
         pygame.display.update()
 
     def _rotCar(self) -> list:

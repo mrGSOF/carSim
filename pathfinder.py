@@ -1,3 +1,4 @@
+import copy
 import time
 import numpy as np
 import cv2
@@ -21,7 +22,7 @@ def resize(img, width=None, height=None):
     return(img, scale)
         
 
-def findPath(img, pos, targetPos, paddingSize = 2, dev=False):
+def findPath(img, pos, targetPos, paddingSize = 5, dev=False):
     
     
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -33,10 +34,13 @@ def findPath(img, pos, targetPos, paddingSize = 2, dev=False):
     img = np.where(img<112, 1, 0).astype(np.uint8)
 
     
-    imgWithPadding = np.zeros(img.shape, dtype=np.uint8)
+    imgWithPadding = copy.deepcopy(img)
+    
     for rowIndex, row in enumerate(img):
         for columnIndex, item in enumerate(row):
             if item == 1:
+                
+                # if (abs(columnIndex-pos[0]) > paddingSize and abs(columnIndex-targetPos[0]) > paddingSize) or (abs(rowIndex-targetPos[1]) > paddingSize and abs(rowIndex-pos[1]) > paddingSize):
                 imgWithPadding[rowIndex-paddingSize:rowIndex+paddingSize+1,columnIndex-paddingSize:columnIndex+paddingSize+1] = 1
     imgTmp = np.where(imgWithPadding==1, 1, 255).astype(np.uint8)
     imgTmp = cv2.circle(imgTmp, (targetPos[0], targetPos[1]), radius=3, color=(112), thickness=-1)
@@ -45,17 +49,20 @@ def findPath(img, pos, targetPos, paddingSize = 2, dev=False):
     # time.sleep(5)
     path = AStar(imgWithPadding).search((pos[1], pos[0]), (targetPos[1], targetPos[0]))
     
-    if dev and path != None:
+    if dev:
         img = np.where(img==0, 255, 0).astype(np.uint8)
-        for dot in path:
-            img = cv2.circle(img, (dot[1], dot[0]), radius=0, color=(0, 255, 0), thickness=-1)
+        imgWithPadding = np.where(imgWithPadding==0, 255, 0).astype(np.uint8)
+        if path != None:
+            for dot in path:
+                img = cv2.circle(img, (dot[1], dot[0]), radius=0, color=(0, 255, 0), thickness=-1)
         # print(np.where((img != 1) & (img != 0)))
         # print(img[int(720/2)-1, int(519)-1])
-        cv2.imshow("path", img)
+        cv2.imshow("path", imgWithPadding)
         cv2.waitKey(1)
+        # time.sleep(15)
     
     scaledPath = []
-    for i in range(2, len(path), 2):
+    for i in range(5, len(path), 5):
         p = path[i]
         scaledPath.append((p[1]/scale, p[0]/scale))
     return(scaledPath)

@@ -9,7 +9,7 @@ import cv2
 import compressing
 
 class Car:
-    def __init__(self, vel=40, targetPos = (600,350)):
+    def __init__(self, vel=40, targetPos = (600,100)):
         self.targetPos = None
         self.currentPos = None
         self.currentAngle = None
@@ -35,14 +35,20 @@ class Car:
         self.mqtt.changeOnMessage(self._onMessage)
         self.mqtt.subscribe(self.topic)
         self.mqtt.loop_forever()
-        
-    
-        
+
     def _sendLastPacket(self):
         self.mqtt.publish(self.topic, {"len": len(str(self.lastPacket)), "data": self.lastPacket})
     
     def _sendPosPacket(self, angle, vel, time=-1, distance=-1):
-        self.lastPacket = {"steering": angle, "velocity": vel, "time": time, "distance": distance}
+        targetPoses = self.targetPoses
+        
+        if self.targetPoses == None:
+            targetPoses = []
+        if self.targetPos == None:
+            targetPos = []
+        else:
+            targetPos = [list(self.targetPos),]
+        self.lastPacket = {"steering": angle, "velocity": vel, "time": time, "distance": distance, "targetPoses": targetPos+targetPoses}
         self._sendLastPacket()
 
     def _onMessage(self, client, clientDat, msg):
@@ -66,9 +72,9 @@ class Car:
                         if (self.targetPoses):
                             print(f"{abs(self.targetPos[0]-self.currentPos[0]) >= 20} and {abs(self.targetPos[1]-self.currentPos[1]) >= 20}")
                         if (not self.targetPoses) or (abs(self.targetPos[0]-self.currentPos[0]) >= 20) or (abs(self.targetPos[1]-self.currentPos[1]) >= 20):
-                            self.targetPoses = pathfinder.findPath(self.img, pos=(int(self.currentPos[0]), int(self.currentPos[1])), targetPos=(int(self.targetFinalPos[0]), int(self.targetFinalPos[1])), paddingSize=3, dev=False)
+                            self.targetPoses = pathfinder.findPath(self.img, pos=(int(self.currentPos[0]), int(self.currentPos[1])), targetPos=(int(self.targetFinalPos[0]), int(self.targetFinalPos[1])), paddingSize=7, dev=True)
                             # print(f"target poses are {self.targetPoses}")
-                            print("got new target poses ;)")
+                            # print("got new target poses ;)")
                         if self.targetPoses:
                             self.targetPos = self.targetPoses.pop(0)
                         else:
@@ -100,15 +106,14 @@ class Car:
             #     self.first = False
 
             #     print(f"[{self.targetPos}] angle {angle}, vel {self.vel}, divided {self.vel*(2.2)}, distance {distance}")
-            print(f"angle {(angle/abs(self.vel))} vel {self.vel} distance {distance}")
-            # if abs(angle) <= 0.5*math.pi:
-            #     self._sendPosPacket(angle/abs(self.vel), self.vel, distance=self.vel)
-            # else:
-            self._sendPosPacket(-1*(angle/abs(self.vel)), -1*self.vel, distance=self.vel/2)
-            self._sendPosPacket(angle/abs(self.vel), self.vel, distance=self.vel/2)
-            self._sendPosPacket(0, self.vel, distance=distance*0.9)
+            # print(f"angle {(angle/abs(self.vel))} vel {self.vel} distance {distance}")
+            # print(self.targetPos)
+            if abs(angle) >= 0.05*math.pi:
+                self._sendPosPacket(-1*(angle/abs(self.vel)), -1*self.vel, distance=self.vel/2)
+                self._sendPosPacket(angle/abs(self.vel), self.vel, distance=self.vel/2)
+            self._sendPosPacket(0, self.vel, distance=distance*0.95)
             
-            if abs(self.currentPos[0]-self.targetPos[0]) < 10 and abs(self.currentPos[1]-self.targetPos[1]) < 10:
+            if abs(self.currentPos[0]-self.targetPos[0]) < 20 and abs(self.currentPos[1]-self.targetPos[1]) < 20:
                 self.targetPos = None
                 if self.targetPoses:
                     self.targetPos = self.targetPoses.pop(0)
