@@ -28,17 +28,22 @@ def findPath(img, pos, targetPos, paddingSize = 2, dev=False):
 
     img, scale = resize(img, width = 150)
     targetPos = (int(targetPos[0]*scale), int(targetPos[1]*scale))
+    pos = (int(pos[0]*scale), int(pos[1]*scale))
 
     img = np.where(img<112, 1, 0).astype(np.uint8)
-    imgWithPadding = np.zeros(img.shape)
+
+    
+    imgWithPadding = np.zeros(img.shape, dtype=np.uint8)
     for rowIndex, row in enumerate(img):
         for columnIndex, item in enumerate(row):
             if item == 1:
                 imgWithPadding[rowIndex-paddingSize:rowIndex+paddingSize+1,columnIndex-paddingSize:columnIndex+paddingSize+1] = 1
-    
-    # print("finding path...")
-    path = AStar(imgWithPadding).search(pos, targetPos)
-    print("found path")
+    imgTmp = np.where(imgWithPadding==1, 1, 255).astype(np.uint8)
+    imgTmp = cv2.circle(imgTmp, (targetPos[0], targetPos[1]), radius=3, color=(112), thickness=-1)
+    # cv2.imshow("path", imgTmp)
+    # cv2.waitKey(1)
+    # time.sleep(5)
+    path = AStar(imgWithPadding).search((pos[1], pos[0]), (targetPos[1], targetPos[0]))
     
     if dev and path != None:
         img = np.where(img==0, 255, 0).astype(np.uint8)
@@ -48,10 +53,14 @@ def findPath(img, pos, targetPos, paddingSize = 2, dev=False):
         # print(img[int(720/2)-1, int(519)-1])
         cv2.imshow("path", img)
         cv2.waitKey(1)
-
-    return(path)
+    
+    scaledPath = []
+    for i in range(2, len(path), 2):
+        p = path[i]
+        scaledPath.append((p[1]/scale, p[0]/scale))
+    return(scaledPath)
 
 if __name__ == "__main__":
-    path = findPath(cv2.imread("./images/reference.png"), dev=True)
+    path = findPath(cv2.imread("./images/reference.png"), pos=(0,0), targetPos=(350, 400), paddingSize=3, dev=True)
     time.sleep(10)
     print(path)

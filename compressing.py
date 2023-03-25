@@ -70,7 +70,8 @@ class Compressor():
             str: json string of the compressed image
         """
         self.matrix_Z1 = matrix
-        M = self._addChannels(matrix, channels=2)                    #< Add second and third channels as zeros
+        M = matrix
+        # M = self._addChannels(matrix, channels=2)                    #< Add second and third channels as zeros
         _, M = cv2.imencode('.jpg', M, self.encode_param_key)        #< Encode to jpg
         json_str = self._makeJsonFrame(key="key", binDat=M)          #< embed compressed data into JSON string
         return(json_str)
@@ -82,9 +83,10 @@ class Decompressor():
         self.keymatrix = None
     
     def _loadJsonFrame(self, json_str):
-        frame = json.loads(json_str)
-        frame["data"] = np.array(list(base64.b64decode(frame["dat"]))).astype(np.uint8)
-        return frame
+        # frame = json.loads(json_str)
+        frame = json_str
+        frame["data"] = np.array(list(base64.b64decode(frame["data"]))).astype(np.uint8)
+        return(frame)
 
     def _decompressDelta(self, delta) -> np.array:
         delta = cv2.imdecode(delta, cv2.IMREAD_COLOR).astype(np.int16) #< Decode received delta image
@@ -99,8 +101,8 @@ class Decompressor():
         return(self.keymatrix)
     
     def _decompressKey(self, key) -> np.array:
-        key = cv2.imdecode(key, cv2.IMREAD_COLOR) #< Decode received delta image
-        self.keymatrix = key[:,:,0]
+        self.keymatrix = cv2.imdecode(key, cv2.IMREAD_COLOR) #< Decode received delta image
+        # self.keymatrix = self.keymatrix[:,:,0]
 
         return(self.keymatrix)
 

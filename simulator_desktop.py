@@ -5,6 +5,7 @@ import pygame
 import time
 import numpy as np
 import base64
+import compressing
 from modules import CarClass
 import mqttCommunication as communication
 from collections import deque
@@ -33,7 +34,7 @@ class Simulator():
         self.clock = pygame.time.Clock()
         self.win = pygame.display.set_mode(size)
 
-        self.car   = pygame.image.load( os.path.join(imagePath, "car.png") )
+        self.car   = pygame.image.load( os.path.join(imagePath, "car2.jpg") )
 
         self.track = pygame.transform.scale(
             #pygame.image.load( os.path.join(imagePath, "track.png")),
@@ -172,8 +173,6 @@ class Simulator():
 
                 else:
                     print("json error")
-                            
-
 
     def start(self):
         self.run = True
@@ -185,27 +184,20 @@ class Simulator():
         self.mqtt.disconnect()
         pygame.quit()
 
-        
     def _sendLastPacket(self):
         self.mqtt.publish(self.topic, {"len": len(str(self.lastPacket)), "data": self.lastPacket})
 
     def _sendPosPacket(self, pos, angle):
         img = pygame.surfarray.array3d(self.win)
-        # img = img.reshape(img.shape[1], img.shape[0], img.shape[2])
-        # cv2.imshow("asdSAD", img)
-        # cv2.waitKey(1)
-        # time.sleep(5)
-        print(img.shape)
-        # print(img)
-        _, img = cv2.imencode(".jpg", img)
-        with open("tmp.txt", "w")as f:
-            f.write(str(list(img)))
-        print(list(img))
-        img = base64.b64encode(img).decode("utf-8")
-            
-        self.lastPacket = {"pos": pos, "angle": angle, "img": (img)}
+        img = np.rot90(img, k=-1)
+        img = np.fliplr(img)
+        
+        compressor = compressing.Compressor(img.shape)
+        img = compressor.compressKey(img)
+
+        self.lastPacket = {"pos": pos, "angle": angle, "img": json.loads(img.replace("'", '"'))}
         self._sendLastPacket()
-    
+
     def _runSimulator(self):
         """
         Runs the simulator, updating the car model and drawing the screen.
@@ -220,7 +212,6 @@ class Simulator():
             if self.time <= 0 and self.que:
                 self.waitingForNextPacket = False
                 packet = self.que.popleft()
-                print(packet)
                 self.time = packet["time"]
                 self.vel = packet["velocity"]
                 self.carMdl.setSteering(np.clip(float(packet["steering"]), -2, 2))
@@ -288,7 +279,7 @@ class Simulator():
         overlap_surf = self._isCollision()
         if overlap_surf != None:
             self.win.blit(overlap_surf, (0,0))
-        pygame.draw.circle(self.win, (255,0,0), (200,200), 2, width=0)
+        # pygame.draw.circle(self.win, (255,0,0), (600,350), 2, width=0)
         for gauge in self.gauges:
             #print(gauge)
             self.gauges[gauge].draw()

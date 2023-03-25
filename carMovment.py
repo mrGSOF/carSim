@@ -6,16 +6,20 @@ import mqttCommunication as communication
 import pathfinder
 import base64
 import cv2
+import compressing
 
 class Car:
-    def __init__(self, vel=40, targetPos = (300,300)):
+    def __init__(self, vel=40, targetPos = (600,350)):
         self.targetPos = None
         self.currentPos = None
         self.currentAngle = None
         self.lastPacket = None
         self.vel = vel
         self.run = False
-        self.targetPos = targetPos
+        self.targetFinalPos = targetPos
+        self.targetPoses = None
+        
+        self.decompresor = compressing.Decompressor()
 
         
         ## debugging variables ###
@@ -51,24 +55,29 @@ class Car:
             if len(data) == dataLen:
                     
                 if data.strip()[0] == "{" and data[-1] == "}":
-                    try:
+                    # try:
+                    if True:
                         data = json.loads(data.replace("'", '"'))
                         self.currentPos = data["pos"]
                         self.currentAngle = self.getShortestAngle(data["angle"])
-                        self.img = np.array(list(base64.b64decode(data["img"])))
-                        print(self.img)
-                        self.img = cv2.imdecode(self.img, cv2.IMREAD_COLOR)
-                        print(self.img)
-                        self.targetPoses = pathfinder.findPath(self.img, pos=self.currentPos, targetPos=self.targetPos, paddingSize=3)
-                        print(self.targetPoses)
+                        self.img = self.decompresor.decompress(data["img"])
+                        # print(f"current pos is {self.currentPos}")
+                        # print(f"target pos is {self.targetPos}")
+                        if (self.targetPoses):
+                            print(f"{abs(self.targetPos[0]-self.currentPos[0]) >= 20} and {abs(self.targetPos[1]-self.currentPos[1]) >= 20}")
+                        if (not self.targetPoses) or (abs(self.targetPos[0]-self.currentPos[0]) >= 20) or (abs(self.targetPos[1]-self.currentPos[1]) >= 20):
+                            self.targetPoses = pathfinder.findPath(self.img, pos=(int(self.currentPos[0]), int(self.currentPos[1])), targetPos=(int(self.targetFinalPos[0]), int(self.targetFinalPos[1])), paddingSize=3, dev=False)
+                            # print(f"target poses are {self.targetPoses}")
+                            print("got new target poses ;)")
                         if self.targetPoses:
                             self.targetPos = self.targetPoses.pop(0)
                         else:
-                            raise Exception("[carMovement] targetPoses cannot be empty")
+                            print("[CarMovementServer] no more target poses")
+                            # raise Exception("[CarMovementServer] destination unreachable")
                         self.calc()
                         
-                    except Exception as e:
-                        print(f"[CarMovementServer] received invalid packet!, error is {e}")
+                    # except Exception as e:
+                    #     print(f"[CarMovementServer] received invalid packet!, error is {e}")
                 else:
                     print("[CarMovementServer] received invalid packet!")
 
@@ -87,25 +96,27 @@ class Car:
             angle = self.getShortestAngle(targetAngle-self.currentAngle)
             distance = math.sqrt((self.targetPos[1]-self.currentPos[1])**2 + (self.targetPos[0]-self.currentPos[0])**2)
             # print(f"final angle is {angle}, current angle is {self.currentAngle}, target angle is {targetAngle}, ERROR is {targetAngle-angle}")
-            if self.first:
-                self.first = False
+            # if self.first:
+            #     self.first = False
 
-                print(f"[{self.targetPos}] angle {angle}, vel {self.vel}, divided {self.vel*(2.2)}, distance {distance}")
+            #     print(f"[{self.targetPos}] angle {angle}, vel {self.vel}, divided {self.vel*(2.2)}, distance {distance}")
             print(f"angle {(angle/abs(self.vel))} vel {self.vel} distance {distance}")
+            # if abs(angle) <= 0.5*math.pi:
+            #     self._sendPosPacket(angle/abs(self.vel), self.vel, distance=self.vel)
+            # else:
             self._sendPosPacket(-1*(angle/abs(self.vel)), -1*self.vel, distance=self.vel/2)
             self._sendPosPacket(angle/abs(self.vel), self.vel, distance=self.vel/2)
             self._sendPosPacket(0, self.vel, distance=distance*0.9)
-            print("done and icbm")
             
             if abs(self.currentPos[0]-self.targetPos[0]) < 10 and abs(self.currentPos[1]-self.targetPos[1]) < 10:
                 self.targetPos = None
                 if self.targetPoses:
                     self.targetPos = self.targetPoses.pop(0)
-                    
-                    self.first = True
+                else:
+                    print("reached target pos, done")
                 
                 self._sendPosPacket(0, 0)
-                time.sleep(0.5)
+                time.sleep(0.1)
             
     def stop(self):
         self.run = False
