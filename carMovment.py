@@ -108,9 +108,23 @@ class Car:
             #     print(f"[{self.targetPos}] angle {angle}, vel {self.vel}, divided {self.vel*(2.2)}, distance {distance}")
             # print(f"angle {(angle/abs(self.vel))} vel {self.vel} distance {distance}")
             # print(self.targetPos)
-            if abs(angle) >= 0.05*math.pi:
-                self._sendPosPacket(-1*(angle/abs(self.vel)), -1*self.vel, distance=self.vel/2)
-                self._sendPosPacket(angle/abs(self.vel), self.vel, distance=self.vel/2)
+            dAngle = angle/abs(self.vel)
+            radius = 1/dAngle
+            sin = math.sin(math.degrees(dAngle/2))
+            turnDistance = abs(self.vel*sin*2) # for angles smaller than 0.5 radians, the turn distance is very close to the r*angle
+            # print(f"distance is {distance} and turnDistance is {turnDistance}")
+            # print(f"radius is {radius}, vel is {self.vel}, sin is {sin}, and turnDistance is {turnDistance}")
+            # print(f"turnDistance is {turnDistance}, and actual distance is {distance}")
+            if turnDistance > distance:
+                self._sendPosPacket(-1*(dAngle), -1*self.vel, distance=self.vel/2)
+                self._sendPosPacket(dAngle, self.vel, distance=self.vel/2)
+                
+            else:
+                self._sendPosPacket(dAngle, self.vel, distance=turnDistance)
+                distance-=turnDistance
+                print(distance)
+                
+                
             self._sendPosPacket(0, self.vel, distance=distance*0.95)
             
             if abs(self.currentPos[0]-self.targetPos[0]) < 20 and abs(self.currentPos[1]-self.targetPos[1]) < 20:
