@@ -165,7 +165,7 @@ class Simulator():
                     distance = int(data["distance"])
                     time = int(data["time"])*self.maxFPS
                     self.targetPoses = data["targetPoses"]
-                    print(f"[{type(self.targetPoses)}] {self.targetPoses}")
+                    # print(f"[{type(self.targetPoses)}] {self.targetPoses}")
                     if distance != -1:
                         time = int(abs((distance/velocity)*self.maxFPS))
                     self.que.append({"steering": steeringAngle, "velocity": velocity, "time": time})
@@ -225,10 +225,7 @@ class Simulator():
                 if self.time > 0:
                     self.time -= 1
 
-            # print( self._isCollision() )
             if self._isCollision() != None:
-                # print( self.carMdl.getPosition() )
-                # print("Collision detected")
                 self._bounceCar()
 
             self.carMdl.update()
@@ -237,7 +234,6 @@ class Simulator():
             self._draw()
             self.clock.tick(self.maxFPS)
             if not self.que and self.waitingForNextPacket == False and self.time <= 0:
-                print("sending pos")
                 self.waitingForNextPacket = True
                 self._sendPosPacket((self.carMdl.state.Px, self.carMdl.state.Py), self.carMdl.state.heading)
 
@@ -280,11 +276,9 @@ class Simulator():
             self.win.blit(overlap_surf, (0,0))
         # pygame.draw.circle(self.win, (255,0,0), (600,350), 2, width=0)
         for gauge in self.gauges:
-            #print(gauge)
             self.gauges[gauge].draw()
         
         for pos in self.targetPoses:
-            print(pos)
             pygame.draw.circle(self.win, (200, 200, 255), pos, 2)
         
         # pygame.draw.circle(self.win, (0, 255, 0), (self.carMdl.state.Px, self.carMdl.state.Py), 2)

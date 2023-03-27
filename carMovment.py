@@ -69,8 +69,8 @@ class Car:
                         self.img = self.decompresor.decompress(data["img"])
                         # print(f"current pos is {self.currentPos}")
                         # print(f"target pos is {self.targetPos}")
-                        if (self.targetPoses):
-                            print(f"{abs(self.targetPos[0]-self.currentPos[0]) >= 20} and {abs(self.targetPos[1]-self.currentPos[1]) >= 20}")
+                        # if (self.targetPoses):
+                        #     print(f"{abs(self.targetPos[0]-self.currentPos[0]) >= 20} and {abs(self.targetPos[1]-self.currentPos[1]) >= 20}")
                         if (not self.targetPoses) or (abs(self.targetPos[0]-self.currentPos[0]) >= 20) or (abs(self.targetPos[1]-self.currentPos[1]) >= 20):
                             self.targetPoses = pathfinder.findPath(self.img, pos=(int(self.currentPos[0]), int(self.currentPos[1])), targetPos=(int(self.targetFinalPos[0]), int(self.targetFinalPos[1])), paddingSize=7, dev=True)
                             # print(f"target poses are {self.targetPoses}")
