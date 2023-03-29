@@ -5,14 +5,14 @@ from collections import deque
 
 class Simulator(SimClass.Simulator_base):
     def __init__(self, fps, size=(340*2, 290*2), selfControl=True, imagePath=r"./images/car.png", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), sendMqtt=False):
-        super().__init__(fps, size, imagePath, imageWidth, imageHeight, bgColor, sendMqtt)
+        super().__init__(fps, size, imagePath, imageWidth, imageHeight, bgColor)
         self.que = deque(maxlen=10)
         self.vel = 0
         self.time = 0
         self.lastPos = None
         self.lastPacket = None
         self.sendMqtt = sendMqtt
-        self.updateCallBack = self._sentOutputPacket
+        self.updateCallBack = self._sendOutputPacket
         if self.sendMqtt:
             with open("settings.json", "r") as f:
                 settings = json.load(f)
@@ -58,7 +58,7 @@ class Simulator(SimClass.Simulator_base):
         self.lastPacket = {"pos": pos, "angle": angle}
         self._sendLastPacket()
 
-    def _sentOutputPacket(self):
+    def _sendOutputPacket(self):
         self._sendPosPacket((self.carMdl.state.Px, self.carMdl.state.Py), self.carMdl.state.heading)
 
     def _readDirKeys(self, keys) -> None:

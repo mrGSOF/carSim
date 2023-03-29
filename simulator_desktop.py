@@ -1,4 +1,3 @@
-import os
 import pygame
 from modules import CarClass
 from modules import SimClass
