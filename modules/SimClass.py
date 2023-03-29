@@ -13,6 +13,7 @@ class Simulator_base():
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
         self.run = False
+        self.updateCallBack = None
 
         self.clock = pygame.time.Clock()
         self.win = pygame.display.set_mode(size)
@@ -143,6 +144,8 @@ class Simulator_base():
             self._gaugesUpdate()
             
             self._draw()
+            if self.updateCallBack != None:
+                self.updateCallBack()       #< Use callback function if exsists 
             self.clock.tick(self.maxFPS)
         pygame.quit()
 
