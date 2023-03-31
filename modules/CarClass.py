@@ -95,7 +95,10 @@ class Car():
     def collide(self, vector=None):
         if (vector == None) and (self.collideTimeout == 0):
             V = self.getVel()
-            Direction = V/abs(V)
+            if V == 0:
+                Direction = 1
+            else:
+                Direction = V/abs(V)
             self.setVel( -(0.8*V +5*Direction) )
             self.setAcc(0)
             self.collideTimeout = 5

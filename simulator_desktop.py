@@ -27,5 +27,9 @@ class Simulator(SimClass.Simulator_base):
                 self.carMdl.setVel(0)
 
 if __name__ == "__main__":
-    pygame.init()
     sim = Simulator(fps=30, size=(600,750), imageWidth=30)
+    try:
+        pygame.init()
+        sim.start()
+    except KeyboardInterrupt:
+        sim.stop()
