@@ -144,19 +144,19 @@ class Simulator_base():
             
             self._draw()
             if self.updateCallBack != None:
-                self.updateCallBack()       #< Use callback function if exsists 
+                self.updateCallBack()       #< Use callback function if exists 
             self.clock.tick(self.maxFPS)
         pygame.quit()
 
     def _readInputs(self) -> None:
-        """ No nothing unless override by inharitance """
+        """ No nothing unless override by inheritance """
         return
 
     def _gaugesUpdate(self) -> None:
         self.gauges['heading'].update(self.carMdl.getHeading(units="deg"))
         self.gauges['steeringWheel'].update(self.carMdl.getSteering(units="deg"))
         self.gauges['speedometer'].update(self.carMdl.getVel())
-        self.gauges['accelaration'].update(self.carMdl.getAcc())
+        self.gauges['acceleration'].update(self.carMdl.getAcc())
 
     def _draw(self):
         """Draw the car"s glob"""
