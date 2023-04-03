@@ -1,5 +1,0 @@
-paho-mqtt
-python-astar
-opencv-python
-numpy
-pygame
