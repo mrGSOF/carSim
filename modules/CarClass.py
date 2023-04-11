@@ -3,38 +3,39 @@ from modules import MathLib as ml
 
 class State():
     """ The car's state variables """
-    def __init__(self, Px, Py, V, heading):
-        self.setFromVector( [Px,Py,V,heading] )
+    def __init__(self, Px, Py, V, F, heading):
+        self.setFromVector( [Px,Py,V,F,heading] )
 
     def getVector(self):
-        """ Returns a tuple of state variables (Px, Py, V, heading) """ 
-        return (self.Px, self.Py, self.V, self.heading)
+        """ Returns a tuple of state variables (Px, Py, V, F, heading) """ 
+        return (self.Px, self.Py, self.V, self.F, self.heading)
 
     def setFromVector(self, V):
         """ Store state variables as class members from list (Px, Py, V, heading) """
-        self.Px = V[0]
-        self.Py = V[1]
-        self.V  = V[2]       #< Car's velocity (pix/s)
-        self.heading = V[3]  #< Car heading (rad)
+        self.Px =      V[0]
+        self.Py =      V[1]
+        self.V  =      V[2]  #< Car's velocity (pix/s)
+        self.F =       V[3]  #< Car accelaration (pix/s^2)
+        self.heading = V[4]  #< Car heading (rad)
         
 class Input():
     """ The car's input variables """
-    def __init__(self, acc, steering):
-        self.setFromVector( [acc,steering] )
+    def __init__(self, F, steering):
+        self.setFromVector( [F,steering] )
 
     def getVector(self):
-        """ Returns a tuple of input variables (0, 0, acc, steering) """ 
-        return (0,0,self.acc, self.steering)
+        """ Returns a tuple of input variables (0, 0, 0, F, steering) """ 
+        return (0,0,0, self.F, self.steering)
 
     def setFromVector(self, V):
-        """ Store input variables as class members from list (acc, steering) """
-        self.acc  = V[0]       #< Car's velocity (pix/s)
-        self.steering = V[1]   #< Car's steering angle (rad)
+        """ Store input variables as class members from list (F, steering) """
+        self.F  = V[0]       #< Car's velocity (pix/s)
+        self.steering = V[1] #< Car's steering angle (rad)
 
 class Car():
-    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, heading=0, Cd=0.05):
-        self.state = State(position[0], position[1], velocity, heading) #< Car's state
-        self.input = Input(acc=0, steering=0)                           #< Car's input
+    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, Cd=0.02):
+        self.state = State(position[0], position[1], velocity, F, heading) #< Car's state
+        self.input = Input(F=0, steering=0)                           #< Car's input
         self.Cd = Cd
         self.dt = dt
         self.Min = -0.5       #< Max steering angle (rad)
@@ -46,11 +47,11 @@ class Car():
 
     def addAcc(self, dAcc):
         """Add dAcc to the current accelaration input value (pix/s^2)"""
-        self.input.acc += dAcc
+        self.input.F += dAcc
 
     def setAcc(self, acc):
         """Set the accelaration input variable (pix/s^2)"""
-        self.input.acc = acc
+        self.input.F = acc
 
     def setVel(self, V):
         """Set the velovity state variable to V and zero the acc input (pix/sec)"""
@@ -83,7 +84,7 @@ class Car():
 
     def getAcc(self):
         """Returns the car's accelarometer (pix/s^2)"""
-        return self.input.acc
+        return self.input.F
 
     def getHeading(self, units='r'):
         """Returns the car's heading in rad or degrees"""
@@ -92,15 +93,23 @@ class Car():
             return ml.radToDeg(heading)
         return heading
 
+    def getDirection(self) -> int:
+        V = self.getVel()
+        if V == 0:
+            Direction = 1
+        else:
+            Direction = V/abs(V)
+        return Direction
+        
     def collide(self, vector=None):
         if (vector == None) and (self.collideTimeout == 0):
             V = self.getVel()
-            if V == 0:
-                Direction = 1
-            else:
-                Direction = V/abs(V)
-            self.setVel( -(0.8*V +5*Direction) )
-            self.setAcc(0)
+            Dir = self.getDirection()
+            F = 0.8*V
+            V0 = 5*Dir
+            self.state.V = -(V0 +F)
+            #self.setVel(-V0 -F)
+            #self.setAcc(0)
             self.collideTimeout = 5
 
     def update(self):
@@ -119,12 +128,17 @@ class Car():
         """Returns the updated state transition matrix (A) of the model"""
         dt = self.dt
         heading = self.state.heading
-        Cd = self.Cd
-        A = [0]*4
-        A[0] = [1, 0, math.cos(heading)*dt, 0]
-        A[1] = [0, 1, math.sin(heading)*dt, 0]
-        A[2] = [0, 0, (1 -Cd), 0]
-        A[3] = [0, 0, 0, 1]
+        Cd = self.Cd #*self.getDirection()
+        V = abs(self.getVel())
+        A = [0]*5
+        cos_heading = math.cos(heading)
+        sin_heading = math.sin(heading)
+        dtt = dt**2
+        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0]
+        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0]
+        A[2] = [0, 0,     1,    dt, 0]
+        A[3] = [0, 0, -0.5*Cd*V, 0, 0]
+        A[4] = [0, 0,     0,     0, 1]
         return A
 
     def _calcInputMatrix(self):
@@ -132,9 +146,10 @@ class Car():
         dt = self.dt
         heading = self.state.heading
         V = self.state.V
-        B = [0]*4
-        B[0] = [0, 0, 0.5*(dt**2), 0]
-        B[1] = [0, 0, 0.5*math.sin(heading)*(dt**2), 0]
-        B[2] = [0, 0, dt, 0]
-        B[3] = [0, 0, 0, V*dt]
+        B = [0]*5
+        B[0] = [0, 0, 0, 0,  0  ]
+        B[1] = [0, 0, 0, 0,  0  ]
+        B[2] = [0, 0, 0, 0,  0  ]
+        B[3] = [0, 0, 0, 1,  0  ]
+        B[4] = [0, 0, 0, 0, V*dt]
         return B
