@@ -4,21 +4,22 @@ from modules import CarClass
 from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator_base():
-    def __init__(self, fps, size=(600, 750), imagePath=r"./images", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255)):
+    def __init__(self, fps, size=(600, 750), carPos=(100, 100), imagePath=r"./images", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), carImagePath="car.png"):
         self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
-        self.carMdl = CarClass.Car(dt=self.dt, position=(60,60))
+        self.carMdl = CarClass.Car(dt=self.dt, position=carPos)
         self.pwrRate = 5              #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
         self.run = False
-        self.updateCallBack = None
+        self.updateCallback = []
+        self.drawCallback = []
 
         self.clock = pygame.time.Clock()
         self.win = pygame.display.set_mode(size)
 
-        self.car   = pygame.image.load( os.path.join(imagePath, "car.png") )
+        self.car   = pygame.image.load( os.path.join(imagePath, carImagePath) )
 
         self.track = pygame.transform.scale(
             #pygame.image.load( os.path.join(imagePath, "track.png")),
@@ -38,10 +39,23 @@ class Simulator_base():
             
         carSize = (imageWidth, imageHeight)
         self.car = pygame.transform.scale(self.car, carSize)
+        print(f"car shape is {carSize}")
         self._rotCar()
 
         self.initCockpit( pos = (0, self.size[1]-150))
 
+    def addUpdateCallback(self, cb, name=""):
+        self.updateCallback.append(cb)
+
+    def addDrawCallback(self, cb, name=""):
+        self.drawCallback.append(cb)
+
+    def removeUpdateCallback(self, name):
+        return
+
+    def removeDrawCallback(self, name):
+        return
+    
     def initCockpit(self, pos=(0,0)) -> None:
         #Scaling the indicators
         scale = 1.0
@@ -143,8 +157,8 @@ class Simulator_base():
             self._gaugesUpdate()
             
             self._draw()
-            if self.updateCallBack != None:
-                self.updateCallBack()       #< Use callback function if exists 
+            for callback in self.updateCallback:
+                callback()  #< Use callback function if exists
             self.clock.tick(self.maxFPS)
         pygame.quit()
 
@@ -163,13 +177,14 @@ class Simulator_base():
         car, carRect = self._rotCar()
         self.win.fill(self.bgColor) #< Fill the canvas with background color
         self.win.blit(self.track, (0,0))
+        for callback in self.drawCallback:
+            callback()
         self.win.blit(car, carRect) #< Draw the car surface on the canvas
         overlap_surf = self._isCollision()
         if overlap_surf != None:
             self.win.blit(overlap_surf, (0,0))
         for gauge in self.gauges:
             self.gauges[gauge].draw()
-
         pygame.display.update()
 
     def _rotCar(self) -> list:
