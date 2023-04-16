@@ -3,19 +3,19 @@ from modules import MathLib as ml
 
 class State():
     """ The car's state variables """
-    def __init__(self, Px, Py, V, F, heading):
-        self.setFromVector( [Px,Py,V,F,heading] )
+    def __init__(self, Px, Py, V, A, heading):
+        self.setFromVector( [Px,Py,V,A,heading] )
 
     def getVector(self):
-        """ Returns a tuple of state variables (Px, Py, V, F, heading) """ 
-        return (self.Px, self.Py, self.V, self.F, self.heading)
+        """ Returns a tuple of state variables (Px, Py, V, A, heading) """ 
+        return (self.Px, self.Py, self.V, self.A, self.heading)
 
     def setFromVector(self, V):
-        """ Store state variables as class members from list (Px, Py, V, heading) """
+        """ Store state variables as class members from list (Px, Py, V, A, heading) """
         self.Px =      V[0]
         self.Py =      V[1]
         self.V  =      V[2]  #< Car's velocity (pix/s)
-        self.F =       V[3]  #< Car accelaration (pix/s^2)
+        self.A =       V[3]  #< Car accelaration (pix/s^2)
         self.heading = V[4]  #< Car heading (rad)
         
 class Input():
@@ -45,18 +45,18 @@ class Car():
     def _start(self):
         raise Exception("this function does not exist in the simulator version of the car module")
 
-    def addAcc(self, dAcc):
+    def addPower(self, dPwr):
         """Add dAcc to the current accelaration input value (pix/s^2)"""
-        self.input.F += dAcc
+        self.input.F += dPwr
 
-    def setAcc(self, acc):
+    def setPower(self, pwr):
         """Set the accelaration input variable (pix/s^2)"""
-        self.input.F = acc
+        self.input.F = pwr
 
     def setVel(self, V):
         """Set the velovity state variable to V and zero the acc input (pix/sec)"""
         self.state.V = V
-        self.setAcc(0)
+        self.setPower(0)
 
     def setSteering(self, rad):
         """Set the steering angle of the input variable (rad)"""
@@ -82,7 +82,7 @@ class Car():
         """Returns the car's velocity (pix/s)"""
         return self.state.V
 
-    def getAcc(self):
+    def getPower(self):
         """Returns the car's accelarometer (pix/s^2)"""
         return self.input.F
 
@@ -105,10 +105,10 @@ class Car():
         if (vector == None) and (self.collideTimeout == 0):
             V = self.getVel()
             Dir = self.getDirection()
-            F = 0.8*V
+            A = 0.8*V
             V0 = 5*Dir
-            self.state.V = -(V0 +F)
-            #self.setVel(-V0 -F)
+            self.state.V = -(V0 +A)
+            #self.setVel(-V0 -A)
             #self.setAcc(0)
             self.collideTimeout = 5
 
@@ -123,6 +123,7 @@ class Car():
         if self.collideTimeout > 0:
             self.collideTimeout -= 1
         #print("Heading: %1.2f (rad)"%(self.state.heading))
+        print("V: %1.2f, A: %1.2f, P: %1.2f"%(self.state.V, self.state.A, self.input.F))
 
     def _calcStateTransitionMatrix(self):
         """Returns the updated state transition matrix (A) of the model"""

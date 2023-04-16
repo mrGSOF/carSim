@@ -9,16 +9,16 @@ class Simulator(SimClass.Simulator_base):
         keys = pygame.key.get_pressed()
         if keys:
             if keys[pygame.K_z]:
-                self.carMdl.addAcc(-self.accRate)
+                self.carMdl.addPower(-self.pwrRate)
                 
             elif keys[pygame.K_a]:
-                self.carMdl.setAcc(0)
+                self.carMdl.setPower(0)
 
             elif keys[pygame.K_q]:
-                self.carMdl.addAcc(+self.accRate)
+                self.carMdl.addPower(+self.pwrRate)
             
             elif keys[pygame.K_SPACE]:
-                self.carMdl.setAcc(0)
+                self.carMdl.setPower(0)
                 self.carMdl.setVel(0)
                 self.carMdl.setSteering(0)
 

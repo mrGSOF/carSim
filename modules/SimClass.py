@@ -9,7 +9,7 @@ class Simulator_base():
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
         self.carMdl = CarClass.Car(dt=self.dt, position=(60,60))
-        self.accRate = 10             #< pix/sec^2/command
+        self.pwrRate = 5              #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
         self.run = False
@@ -156,7 +156,7 @@ class Simulator_base():
         self.gauges['heading'].update(self.carMdl.getHeading(units="deg"))
         self.gauges['steeringWheel'].update(self.carMdl.getSteering(units="deg"))
         self.gauges['speedometer'].update(self.carMdl.getVel())
-        self.gauges['acceleration'].update(self.carMdl.getAcc())
+        self.gauges['acceleration'].update(self.carMdl.getPower())
 
     def _draw(self):
         """Draw the car"s glob"""
