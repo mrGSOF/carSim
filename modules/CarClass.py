@@ -33,10 +33,11 @@ class Input():
         self.steering = V[1] #< Car's steering angle (rad)
 
 class Car():
-    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, Cd=0.02):
+    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, Cd=0.02, rollFriction=0.1):
         self.state = State(position[0], position[1], velocity, F, heading) #< Car's state
         self.input = Input(F=0, steering=0)                           #< Car's input
         self.Cd = Cd
+        self.rollFriction = rollFriction
         self.dt = dt
         self.Min = -0.5       #< Max steering angle (rad)
         self.Max = +0.5       #< Max steering angle (rad)
@@ -123,12 +124,13 @@ class Car():
         if self.collideTimeout > 0:
             self.collideTimeout -= 1
         #print("Heading: %1.2f (rad)"%(self.state.heading))
-        print("V: %1.2f, A: %1.2f, P: %1.2f"%(self.state.V, self.state.A, self.input.F))
+        #print("V: %1.2f, A: %1.2f, P: %1.2f"%(self.state.V, self.state.A, self.input.F))
 
     def _calcStateTransitionMatrix(self):
         """Returns the updated state transition matrix (A) of the model"""
         dt = self.dt
         heading = self.state.heading
+        rF = self.rollFriction
         Cd = self.Cd #*self.getDirection()
         V = abs(self.getVel())
         A = [0]*5
@@ -138,7 +140,7 @@ class Car():
         A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0]
         A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0]
         A[2] = [0, 0,     1,    dt, 0]
-        A[3] = [0, 0, -0.5*Cd*V, 0, 0]
+        A[3] = [0, 0, -0.5*Cd*V -rF, 0, 0]
         A[4] = [0, 0,     0,     0, 1]
         return A
 

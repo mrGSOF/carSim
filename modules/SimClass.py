@@ -4,11 +4,18 @@ from modules import CarClass
 from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator_base():
-    def __init__(self, fps, size=(600, 750), carPos=(100, 100), imagePath=r"./images", imageWidth=None, imageHeight=None, bgColor=(255, 255, 255), carImagePath="car.png"):
+    def __init__(self, fps, size=(600, 750), carPos=(100, 100),
+                 imagePath=r"./images",
+                 imageWidth=None,
+                 imageHeight=None,
+                 bgColor=(255, 255, 255),
+                 carImagePath="car.png",
+                 Cd=0.05, rollFriction=0.1
+                ):
         self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
-        self.carMdl = CarClass.Car(dt=self.dt, position=carPos)
+        self.carMdl = CarClass.Car(dt=self.dt, position=carPos, Cd=Cd, rollFriction=rollFriction)
         self.pwrRate = 5              #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor

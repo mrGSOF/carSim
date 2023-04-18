@@ -32,7 +32,7 @@ class Simulator(SimClass.Simulator_base):
                 self.carMdl.addSteering(-self.steeringRate)
             
 if __name__ == "__main__":
-    sim = Simulator(fps=30, size=(600,750), imageWidth=30)
+    sim = Simulator(fps=30, size=(600,750), imageWidth=30, Cd=0.02, rollFriction=1.5)
     try:
         pygame.init()
         sim.start()
