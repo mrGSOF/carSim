@@ -1,6 +1,5 @@
 import pygame
-from modules import CarClass
-from modules import SimClass
+import SimClass
 from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator(SimClass.Simulator_base):

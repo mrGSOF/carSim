@@ -5,7 +5,7 @@
 
 import math, os
 import pygame
-from GSOF_Cockpit import Dial_base
+from . import Dial_base
    
 class SingleIndicator(Dial_base.Dial):
    """

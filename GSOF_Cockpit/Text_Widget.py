@@ -1,5 +1,5 @@
 import pygame
-from GSOF_Cockpit import Pygame_Colors as COLOR
+from . import Pygame_Colors as COLOR
 
 class TextCtrl():
     def __init__(self, GUIobj=False, pos=(0,0), size=-1, color=COLOR.GRAY, textColor=COLOR.BLACK, name='Button', function=False, ANSI=False, draw=True):
