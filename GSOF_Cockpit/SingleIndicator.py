@@ -5,8 +5,17 @@
 
 import math, os
 import pygame
-from . import Dial_base
-   
+#from GSOF_Cockpit import Dial_base
+import importlib.util, os, sys
+mdl = ""
+path = os.path.join(os.path.dirname(__spec__.origin), "", "Dial_base.py" )
+print(path)
+spec = importlib.util.spec_from_file_location(mdl, path)
+print(spec)
+Dial_base = importlib.util.module_from_spec(spec)
+sys.modules[mdl] = Dial_base
+spec.loader.exec_module(Dial_base)
+
 class SingleIndicator(Dial_base.Dial):
    """
    Dial gauge with single niddle.

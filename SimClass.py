@@ -1,7 +1,24 @@
 import os
 import pygame
-from modules import CarClass
-from GSOF_Cockpit import SingleIndicator as SI
+#from GSOF_Cockpit import SingleIndicator as SI
+import importlib.util, os, sys
+mdl = ""
+path = os.path.join(os.path.dirname(__spec__.origin), "GSOF_Cockpit", "SingleIndicator.py" )
+print(path)
+spec = importlib.util.spec_from_file_location(mdl, path)
+print(spec)
+SI = importlib.util.module_from_spec(spec)
+sys.modules[mdl] = SI
+spec.loader.exec_module(SI)
+
+#from modules import CarClass
+path = os.path.join(os.path.dirname(__spec__.origin), "modules", "CarClass.py" )
+print(path)
+spec = importlib.util.spec_from_file_location(mdl, path)
+print(spec)
+CarClass = importlib.util.module_from_spec(spec)
+sys.modules[mdl] = CarClass
+spec.loader.exec_module(CarClass)
 
 class Simulator_base():
     def __init__(self, fps, size=(600, 750), carPos=(100, 100),
@@ -12,6 +29,7 @@ class Simulator_base():
                  carImagePath="car.png",
                  Cd=0.05, rollFriction=0.1
                 ):
+        print( "loading images from: %s"%(imagePath) )
         self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
@@ -80,7 +98,7 @@ class Simulator_base():
         head_pos = (spd_pos[0]  +spd_size[0]  +gap, turn_pos[1])
         acc_pos =  (head_pos[0] +head_size[0] +gap, turn_pos[1])
 
-        folder = "./"
+        folder = os.path.dirname(__spec__.origin) #"./"
         head = SI.SingleIndicator( self.win, pos=head_pos, size=head_size,
                           imgList={"Frame":pygame.image.load("%s/GSOF_Cockpit/resources/HeadingIndicator_Background.png"%folder),
                                    "Ind":pygame.image.load("%s/GSOF_Cockpit/resources/HeadingWheel.png"%folder),

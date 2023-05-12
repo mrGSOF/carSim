@@ -1,5 +1,14 @@
 import math
-from . import MathLib as ml
+#from modules import MathLib as ml
+import importlib.util, os, sys
+mdl = ""
+path = os.path.join(os.path.dirname(__spec__.origin), "", "MathLib.py" )
+print(path)
+spec = importlib.util.spec_from_file_location(mdl, path)
+print(spec)
+ml = importlib.util.module_from_spec(spec)
+sys.modules[mdl] = ml
+spec.loader.exec_module(ml)
 
 class State():
     """ The car's state variables """
