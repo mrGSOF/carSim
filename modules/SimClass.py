@@ -1,7 +1,7 @@
 import os
 import pygame
-from modules import CarClass
-from GSOF_Cockpit import SingleIndicator as SI
+from . import CarClass
+from ..GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator_base():
     def __init__(self, fps, size=(600, 750), carPos=(100, 100),
@@ -34,9 +34,11 @@ class Simulator_base():
             (size[0], size[0]) )
         self.track_mask = pygame.mask.from_surface(self.track)
 
-        carRect = self.car.get_rect()
-        if imageWidth== None and imageHeight == None:
-            carSize = (carRect[2], carRect[3])
+        carRect = list(self.car.get_rect())
+        print(f"car rect is {carRect}")
+        if imageWidth == None and imageHeight == None:
+            imageWidth = int(carRect[2])
+            imageHeight = int(carRect[3])
             
         elif imageWidth == None:
             imageWidth = int(carRect[2]*imageHeight/carRect[3])
@@ -45,6 +47,7 @@ class Simulator_base():
             imageHeight = int(carRect[3]*imageWidth/carRect[2])
             
         carSize = (imageWidth, imageHeight)
+        print(f"car size is {carSize}")
         self.car = pygame.transform.scale(self.car, carSize)
         print(f"car shape is {carSize}")
         self._rotCar()
@@ -80,7 +83,7 @@ class Simulator_base():
         head_pos = (spd_pos[0]  +spd_size[0]  +gap, turn_pos[1])
         acc_pos =  (head_pos[0] +head_size[0] +gap, turn_pos[1])
 
-        folder = "./"
+        folder = "./carSim_git"
         head = SI.SingleIndicator( self.win, pos=head_pos, size=head_size,
                           imgList={"Frame":pygame.image.load("%s/GSOF_Cockpit/resources/HeadingIndicator_Background.png"%folder),
                                    "Ind":pygame.image.load("%s/GSOF_Cockpit/resources/HeadingWheel.png"%folder),
