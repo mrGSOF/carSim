@@ -1,6 +1,5 @@
 import pygame
 import SimClass
-from GSOF_Cockpit import SingleIndicator as SI
 
 class Simulator(SimClass.Simulator_base):
     def _readInputs(self) -> None:
