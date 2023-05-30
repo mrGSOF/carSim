@@ -12,44 +12,48 @@ spec.loader.exec_module(ml)
 
 class State():
     """ The car's state variables """
-    def __init__(self, Px, Py, V, A, heading):
-        self.setFromVector( [Px,Py,V,A,heading] )
+    def __init__(self, Px, Py, V, A, heading, N):
+        self.setFromVector( [Px,Py,V,A,heading,N] )
 
     def getVector(self):
-        """ Returns a tuple of state variables (Px, Py, V, A, heading) """ 
-        return (self.Px, self.Py, self.V, self.A, self.heading)
+        """ Returns a tuple of state variables (Px, Py, V, A, heading, N) """ 
+        return (self.Px, self.Py, self.V, self.A, self.heading, self.N)
 
     def setFromVector(self, V):
-        """ Store state variables as class members from list (Px, Py, V, A, heading) """
+        """ Store state variables as class members from list (Px, Py, V, A, heading, N) """
         self.Px =      V[0]
         self.Py =      V[1]
         self.V  =      V[2]  #< Car's velocity (pix/s)
         self.A =       V[3]  #< Car accelaration (pix/s^2)
         self.heading = V[4]  #< Car heading (rad)
+        self.N       = V[5]  #< Car's normal force (kgf)
         
 class Input():
     """ The car's input variables """
-    def __init__(self, F, steering):
-        self.setFromVector( [F,steering] )
+    def __init__(self, F, steering, normal=1):
+        self.setFromVector( [F,steering,normal] )
 
     def getVector(self):
         """ Returns a tuple of input variables (0, 0, 0, F, steering) """ 
-        return (0,0,0, self.F, self.steering)
+        return (0,0,0, self.F, self.steering, self.N)
 
     def setFromVector(self, V):
         """ Store input variables as class members from list (F, steering) """
         self.F  = V[0]       #< Car's velocity (pix/s)
         self.steering = V[1] #< Car's steering angle (rad)
+        if len(V) > 2:
+            self.N = V[2]
+            print(self.N)
 
 class Car():
-    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, Cd=0.02, rollFriction=0.1):
-        self.state = State(position[0], position[1], velocity, F, heading) #< Car's state
-        self.input = Input(F=0, steering=0)                           #< Car's input
-        self.Cd = Cd
-        self.rollFriction = rollFriction
+    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, Cd=0.02, rollResCoef=0.01):
+        self.state = State(position[0], position[1], velocity, F, heading, 1) #< Car's state
+        self.input = Input(F=0, steering=0, )                                   #< Car's input
+        self.Cd = Cd                                 #< Coef' of air drag
+        self.rollResF = self.input.N*rollResCoef/0.1 #< Normal*RollingResistanceCoef / radius
         self.dt = dt
-        self.Min = -0.5       #< Max steering angle (rad)
-        self.Max = +0.5       #< Max steering angle (rad)
+        self.Min = -0.5        #< Max steering angle (rad)
+        self.Max = +0.5        #< Max steering angle (rad)
         self.collideTimeout = 0
     
     def _start(self):
@@ -139,18 +143,22 @@ class Car():
         """Returns the updated state transition matrix (A) of the model"""
         dt = self.dt
         heading = self.state.heading
-        rF = self.rollFriction
-        Cd = self.Cd #*self.getDirection()
+        Cd = self.Cd
         V = abs(self.getVel())
-        A = [0]*5
+        if V > 0.5:
+            rF = self.rollResF*self.getDirection()
+        else:
+            rF = 0
+        A = [0]*6
         cos_heading = math.cos(heading)
         sin_heading = math.sin(heading)
         dtt = dt**2
-        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0]
-        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0]
-        A[2] = [0, 0,     1,    dt, 0]
-        A[3] = [0, 0, -0.5*Cd*V -rF, 0, 0]
-        A[4] = [0, 0,     0,     0, 1]
+        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0 , 0  ]
+        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0 , 0  ]
+        A[2] = [0, 0,     1         ,        dt          , 0 , 0  ]
+        A[3] = [0, 0,  -0.5*Cd*V    ,         0          , 0 , -rF]
+        A[4] = [0, 0,     0         ,         0          , 1 , 0  ]
+        A[5] = [0, 0,     0         ,         0          , 0 , 0  ]
         return A
 
     def _calcInputMatrix(self):
@@ -158,10 +166,11 @@ class Car():
         dt = self.dt
         heading = self.state.heading
         V = self.state.V
-        B = [0]*5
-        B[0] = [0, 0, 0, 0,  0  ]
-        B[1] = [0, 0, 0, 0,  0  ]
-        B[2] = [0, 0, 0, 0,  0  ]
-        B[3] = [0, 0, 0, 1,  0  ]
-        B[4] = [0, 0, 0, 0, V*dt]
+        B = [0]*6
+        B[0] = [0, 0, 0, 0,  0  , 0]
+        B[1] = [0, 0, 0, 0,  0  , 0]
+        B[2] = [0, 0, 0, 0,  0  , 0]
+        B[3] = [0, 0, 0, 1,  0  , 0]
+        B[4] = [0, 0, 0, 0, V*dt, 0]
+        B[5] = [0, 0, 0, 0,  0  , 1]
         return B

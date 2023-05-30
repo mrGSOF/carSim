@@ -27,13 +27,13 @@ class Simulator_base():
                  imageHeight=None,
                  bgColor=(255, 255, 255),
                  carImagePath="car.png",
-                 Cd=0.05, rollFriction=0.1
+                 Cd=0.05, rollResCoef=0.1
                 ):
         print( "loading images from: %s"%(imagePath) )
         self.size = size
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
-        self.carMdl = CarClass.Car(dt=self.dt, position=carPos, Cd=Cd, rollFriction=rollFriction)
+        self.carMdl = CarClass.Car(dt=self.dt, position=carPos, Cd=Cd, rollResCoef=rollResCoef)
         self.pwrRate = 5              #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
