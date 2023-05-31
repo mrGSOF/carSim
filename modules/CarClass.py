@@ -153,16 +153,21 @@ class Car():
 
     def _calcStateTransitionMatrix(self):
         """Returns the updated state transition matrix (A) of the model"""
-        dt = self.dt
-        heading = self.state.heading
         V = abs(self.getVel())
         airDragA = 0.5*self.Cd*self.surfArea*V/self.state.mass
-        if V > 1.0:
-            #rollResF = g*self.state.mass*self.rollResCoef/self.wheelRadius
-            rollResA  = g*self.rollResCoef/(self.wheelRadius*self.state.mass)
-            rollResA *= self.getDirection()
+        rollResF = g*self.rollResCoef*self.state.mass/self.wheelRadius
+        if ( (V == 0) and ( abs(self.input.F) < rollResF) ):
+            rollResA = 0
+            self.state.A = 0
+        elif ( abs(self.input.F) > rollResF ) or (V > 0.5):
+            rollResA = self.getDirection()*rollResF/(self.state.mass**2)
         else:
             rollResA = 0
+            self.state.A = 0
+            self.state.V = 0
+            
+        dt = self.dt
+        heading = self.state.heading
         cos_heading = math.cos(heading)
         sin_heading = math.sin(heading)
         dtt = dt**2
@@ -173,7 +178,8 @@ class Car():
         A[3] = [0, 0,  -airDragA    ,         0          , 0 ,-rollResA]
         A[4] = [0, 0,     0         ,         0          , 1 ,    0    ]
         A[5] = [0, 0,     0         ,         0          , 0 ,    1    ]
-        print( "airDrag,%1.1f, rollRes, %1.1f, V,%1.1f"%(airDragA, rollResA, V) ) 
+        #print(rollResF, self.input.F)
+        #print( "airDrag,%1.1f, rollRes, %1.1f, V,%1.1f"%(airDragA, rollResA, V) ) 
         #print( "A,%s V,%1.1f"%(str(A[3]), V) ) 
         return A
 
