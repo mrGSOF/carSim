@@ -10,14 +10,15 @@ ml = importlib.util.module_from_spec(spec)
 sys.modules[mdl] = ml
 spec.loader.exec_module(ml)
 
+g = 9.81
 class State():
     """ The car's state variables """
-    def __init__(self, Px, Py, V, A, heading, N):
-        self.setFromVector( [Px,Py,V,A,heading,N] )
+    def __init__(self, Px, Py, V, A, heading, mass):
+        self.setFromVector( [Px,Py,V,A,heading,mass] )
 
     def getVector(self):
         """ Returns a tuple of state variables (Px, Py, V, A, heading, N) """ 
-        return (self.Px, self.Py, self.V, self.A, self.heading, self.N)
+        return (self.Px, self.Py, self.V, self.A, self.heading, self.mass)
 
     def setFromVector(self, V):
         """ Store state variables as class members from list (Px, Py, V, A, heading, N) """
@@ -26,34 +27,41 @@ class State():
         self.V  =      V[2]  #< Car's velocity (pix/s)
         self.A =       V[3]  #< Car accelaration (pix/s^2)
         self.heading = V[4]  #< Car heading (rad)
-        self.N       = V[5]  #< Car's normal force (kgf)
+        self.mass    = V[5]  #< Car's normal force (kgf)
         
 class Input():
     """ The car's input variables """
-    def __init__(self, F, steering, normal=1):
-        self.setFromVector( [F,steering,normal] )
+    def __init__(self, F, steering, deltaMass=0):
+        self.setFromVector( [F,steering,deltaMass] )
 
     def getVector(self):
         """ Returns a tuple of input variables (0, 0, 0, F, steering) """ 
-        return (0,0,0, self.F, self.steering, self.N)
+        return (0,0,0, self.F, self.steering, self.deltaMass)
 
     def setFromVector(self, V):
         """ Store input variables as class members from list (F, steering) """
         self.F  = V[0]       #< Car's velocity (pix/s)
         self.steering = V[1] #< Car's steering angle (rad)
         if len(V) > 2:
-            self.N = V[2]
-            print(self.N)
+            self.deltaMass = V[2]
+            #print(self.deltaMass)
 
 class Car():
-    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, Cd=0.02, rollResCoef=0.01):
-        self.state = State(position[0], position[1], velocity, F, heading, 1) #< Car's state
-        self.input = Input(F=0, steering=0, )                                   #< Car's input
-        self.Cd = Cd                                 #< Coef' of air drag
-        self.rollResF = self.input.N*rollResCoef/0.1 #< Normal*RollingResistanceCoef / radius
+    def __init__(self, dt=0.05, port=None, position=[0,0], velocity=0, F=0, heading=0, mass=0.1, wheelRadius=0.1, rollResCoef=0.005, Cd=0.01):
+        self.state = State(Px=position[0], Py=position[1],     #< Car's state
+                           V=velocity, A=0, heading=heading,
+                           mass=mass
+                           )
+        self.input = Input(F=0, steering=0, deltaMass=0 )      #< Car's input
+        self.Cd = Cd                                           #< Coef' of air drag
+        self.rollResCoef = rollResCoef
+        self.wheelRadius = wheelRadius
+        self.mass = mass
+        self.surfArea = 0.05
         self.dt = dt
         self.Min = -0.5        #< Max steering angle (rad)
         self.Max = +0.5        #< Max steering angle (rad)
+        self.MaxF = 10.0       #< Max propulsion force
         self.collideTimeout = 0
     
     def _start(self):
@@ -62,10 +70,14 @@ class Car():
     def addPower(self, dPwr):
         """Add dAcc to the current accelaration input value (pix/s^2)"""
         self.input.F += dPwr
+        if self.input.F > self.MaxF:
+            self.input.F = self.MaxF
 
     def setPower(self, pwr):
         """Set the accelaration input variable (pix/s^2)"""
         self.input.F = pwr
+        if self.input.F < -self.MaxF:
+            self.input.F = -elf.MaxF
 
     def setVel(self, V):
         """Set the velovity state variable to V and zero the acc input (pix/sec)"""
@@ -143,22 +155,26 @@ class Car():
         """Returns the updated state transition matrix (A) of the model"""
         dt = self.dt
         heading = self.state.heading
-        Cd = self.Cd
         V = abs(self.getVel())
-        if V > 0.5:
-            rF = self.rollResF*self.getDirection()
+        airDragA = 0.5*self.Cd*self.surfArea*V/self.state.mass
+        if V > 1.0:
+            #rollResF = g*self.state.mass*self.rollResCoef/self.wheelRadius
+            rollResA  = g*self.rollResCoef/(self.wheelRadius*self.state.mass)
+            rollResA *= self.getDirection()
         else:
-            rF = 0
-        A = [0]*6
+            rollResA = 0
         cos_heading = math.cos(heading)
         sin_heading = math.sin(heading)
         dtt = dt**2
-        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0 , 0  ]
-        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0 , 0  ]
-        A[2] = [0, 0,     1         ,        dt          , 0 , 0  ]
-        A[3] = [0, 0,  -0.5*Cd*V    ,         0          , 0 , -rF]
-        A[4] = [0, 0,     0         ,         0          , 1 , 0  ]
-        A[5] = [0, 0,     0         ,         0          , 0 , 0  ]
+        A = [0]*6
+        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0 ,    0    ]
+        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0 ,    0    ]
+        A[2] = [0, 0,     1         ,        dt          , 0 ,    0    ]
+        A[3] = [0, 0,  -airDragA    ,         0          , 0 ,-rollResA]
+        A[4] = [0, 0,     0         ,         0          , 1 ,    0    ]
+        A[5] = [0, 0,     0         ,         0          , 0 ,    1    ]
+        print( "airDrag,%1.1f, rollRes, %1.1f, V,%1.1f"%(airDragA, rollResA, V) ) 
+        #print( "A,%s V,%1.1f"%(str(A[3]), V) ) 
         return A
 
     def _calcInputMatrix(self):
@@ -166,11 +182,12 @@ class Car():
         dt = self.dt
         heading = self.state.heading
         V = self.state.V
+        mass = self.state.mass
         B = [0]*6
-        B[0] = [0, 0, 0, 0,  0  , 0]
-        B[1] = [0, 0, 0, 0,  0  , 0]
-        B[2] = [0, 0, 0, 0,  0  , 0]
-        B[3] = [0, 0, 0, 1,  0  , 0]
-        B[4] = [0, 0, 0, 0, V*dt, 0]
-        B[5] = [0, 0, 0, 0,  0  , 1]
+        B[0] = [0, 0, 0,       0,     0  , 0 ]
+        B[1] = [0, 0, 0,       0,     0  , 0 ]
+        B[2] = [0, 0, 0,       0,     0  , 0 ]
+        B[3] = [0, 0, 0,    1/mass,   0  , 0 ]
+        B[4] = [0, 0, 0,       0,    V*dt, 0 ]
+        B[5] = [0, 0, 0,       0,     0  , dt]
         return B

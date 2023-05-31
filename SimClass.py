@@ -34,7 +34,7 @@ class Simulator_base():
         self.maxFPS = fps
         self.dt = 1/self.maxFPS
         self.carMdl = CarClass.Car(dt=self.dt, position=carPos, Cd=Cd, rollResCoef=rollResCoef)
-        self.pwrRate = 5              #< pix/sec^2/command
+        self.forceRate = 0.5          #< pix/sec^2/command
         self.steeringRate = 0.002     #< rad/sec/command
         self.bgColor = bgColor
         self.run = False
