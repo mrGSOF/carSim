@@ -77,7 +77,7 @@ class Car():
         """Set the accelaration input variable (pix/s^2)"""
         self.input.F = pwr
         if self.input.F < -self.MaxF:
-            self.input.F = -elf.MaxF
+            self.input.F = -self.MaxF
 
     def setVel(self, V):
         """Set the velovity state variable to V and zero the acc input (pix/sec)"""
@@ -172,12 +172,13 @@ class Car():
         sin_heading = math.sin(heading)
         dtt = dt**2
         A = [0]*6
-        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0 ,    0    ]
-        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0 ,    0    ]
-        A[2] = [0, 0,     1         ,        dt          , 0 ,    0    ]
-        A[3] = [0, 0,  -airDragA    ,         0          , 0 ,-rollResA]
-        A[4] = [0, 0,     0         ,         0          , 1 ,    0    ]
-        A[5] = [0, 0,     0         ,         0          , 0 ,    1    ]
+              #Px, Py,     V                  A         Heading  Mass
+        A[0] = [1, 0, cos_heading*dt, 0.5*cos_heading*dtt, 0 ,    0    ] #Px
+        A[1] = [0, 1, sin_heading*dt, 0.5*sin_heading*dtt, 0 ,    0    ] #Py
+        A[2] = [0, 0,     1         ,        dt          , 0 ,    0    ] #V
+        A[3] = [0, 0,  -airDragA    ,         0          , 0 ,-rollResA] #A
+        A[4] = [0, 0,     0         ,         0          , 1 ,    0    ] #Heading
+        A[5] = [0, 0,     0         ,         0          , 0 ,    1    ] #Mass
         #print(rollResF, self.input.F)
         #print( "airDrag,%1.1f, rollRes, %1.1f, V,%1.1f"%(airDragA, rollResA, V) ) 
         #print( "A,%s V,%1.1f"%(str(A[3]), V) ) 
